@@ -51,6 +51,11 @@
             padding-bottom: 10px;
             margin-bottom: 14px;
         }
+        .header .perusahaan-info {
+            flex: 1 1 auto;
+            max-width: 68%;
+            padding-right: 20px;
+        }
         .company-name {
             font-size: 31px;
             font-weight: bold;
@@ -68,10 +73,11 @@
             margin: 0;
         }
         .kepada {
+            flex: 0 0 auto;
             text-align: right;
             font-size: 18px;
             padding-top: 4px;
-            margin-right: 40px;
+            white-space: nowrap;
         }
         .kepada .nama-customer { font-weight: bold; font-size: 19px; margin-top: 4px; }
 
@@ -237,7 +243,7 @@
     <div class="page">
 
         <div class="header">
-            <div>
+            <div class="perusahaan-info">
                 <p class="company-name">{{ strtoupper($deliveryNote->perusahaan->nama_perusahaan ?? '-') }}</p>
                 @if($deliveryNote->perusahaan->deskripsi)
                     <p class="company-sub">{{ $deliveryNote->perusahaan->deskripsi }}</p>
