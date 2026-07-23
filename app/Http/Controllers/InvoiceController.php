@@ -56,6 +56,7 @@ class InvoiceController extends Controller
             'no_invoice' => 'required|string|max:100',
             'tanggal_invoice' => 'required|date',
             'no_po' => 'nullable|string|max:100',
+            'catatan' => 'nullable|string',
             'ppn_persen' => 'nullable|numeric|min:0|max:100',
 
             'items' => 'required|array|min:1',
@@ -87,6 +88,7 @@ class InvoiceController extends Controller
                 'no_invoice' => $validated['no_invoice'],
                 'tanggal_invoice' => $validated['tanggal_invoice'],
                 'no_po' => $validated['no_po'] ?? $deliveryNote->no_po,
+                'catatan' => $validated['catatan'] ?? null,
                 'subtotal' => $subtotal,
                 'ppn_persen' => $ppnPersen,
                 'ppn_nominal' => $ppnNominal,
@@ -129,6 +131,7 @@ class InvoiceController extends Controller
             'no_invoice' => 'required|string|max:100',
             'tanggal_invoice' => 'required|date',
             'no_po' => 'nullable|string|max:100',
+            'catatan' => 'nullable|string',
             'ppn_persen' => 'nullable|numeric|min:0|max:100',
 
             'items' => 'required|array|min:1',
@@ -150,6 +153,7 @@ class InvoiceController extends Controller
                 'no_invoice' => $validated['no_invoice'],
                 'tanggal_invoice' => $validated['tanggal_invoice'],
                 'no_po' => $validated['no_po'] ?? null,
+                'catatan' => $validated['catatan'] ?? null,
                 'subtotal' => $subtotal,
                 'ppn_persen' => $ppnPersen,
                 'ppn_nominal' => $ppnNominal,

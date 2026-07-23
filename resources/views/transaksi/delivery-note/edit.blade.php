@@ -61,9 +61,27 @@
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label">Tanggal <span class="text-danger">*</span></label>
-                    <input type="date" name="tanggal" value="{{ old('tanggal', \Carbon\Carbon::parse($deliveryNote->tanggal)->format('Y-m-d')) }}" class="form-control @error('tanggal') is-invalid @enderror">
+                    <label class="form-label">Tanggal</label>
+                    <input type="date" name="tanggal" value="{{ old('tanggal', $deliveryNote->tanggal ? \Carbon\Carbon::parse($deliveryNote->tanggal)->format('Y-m-d') : '') }}" class="form-control @error('tanggal') is-invalid @enderror">
                     @error('tanggal')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label d-block">PPN</label>
+                    <div class="form-check form-switch mt-1">
+                        <input type="checkbox" name="pakai_ppn" value="1" class="form-check-input" id="pakai_ppn"
+                            {{ old('pakai_ppn', $deliveryNote->pakai_ppn) ? 'checked' : '' }}>
+                        <label class="form-check-label" for="pakai_ppn">Gunakan PPN</label>
+                    </div>
+                </div>
+
+                <div class="col-md-4" id="wrap-ppn-persen" style="{{ old('pakai_ppn', $deliveryNote->pakai_ppn) ? '' : 'display:none;' }}">
+                    <label class="form-label">PPN (%)</label>
+                    <input type="number" step="0.01" min="0" max="100" name="ppn_persen"
+                        value="{{ old('ppn_persen', $deliveryNote->ppn_persen ?? 11) }}" class="form-control @error('ppn_persen') is-invalid @enderror">
+                    @error('ppn_persen')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
@@ -83,6 +101,7 @@
                 <h6 class="mb-0">Daftar Barang</h6>
                 <button type="button" class="btn btn-sm btn-primary" id="btn-tambah-barang">+ Tambah Barang</button>
             </div>
+            <p class="text-muted small mb-2">Qty, satuan, dan harga boleh dikosongkan di sini — bisa dilengkapi nanti saat membuat invoice.</p>
 
             @error('items')
                 <div class="alert alert-danger py-2">{{ $message }}</div>
@@ -114,7 +133,7 @@
         <tr class="row-barang">
             <td>
                 <select name="items[__INDEX__][barang_id]" class="form-select form-select-sm select-barang">
-                    <option value="">-- Pilih Barang --</option>
+                    <option value="">-- Pilih dari Master (opsional) --</option>
                     @foreach($barangs as $barang)
                         <option value="{{ $barang->id }}"
                             data-nama="{{ $barang->nama_barang }}"
@@ -124,16 +143,19 @@
                         </option>
                     @endforeach
                 </select>
-                <input type="text" name="items[__INDEX__][nama_barang]" class="form-control form-control-sm mt-1 input-nama-barang" placeholder="Nama barang" required>
+                <input type="text" name="items[__INDEX__][nama_barang]" class="form-control form-control-sm mt-1 input-nama-barang" placeholder="Atau ketik nama barang manual" required>
             </td>
             <td>
-                <input type="number" step="0.01" min="0.01" name="items[__INDEX__][qty]" class="form-control form-control-sm input-qty" required>
+                <input type="number" step="0.01" min="0" name="items[__INDEX__][qty]" class="form-control form-control-sm input-qty" placeholder="opsional">
             </td>
             <td>
-                <input type="text" name="items[__INDEX__][satuan]" class="form-control form-control-sm input-satuan">
+                <input type="text" name="items[__INDEX__][satuan]" class="form-control form-control-sm input-satuan" placeholder="pcs, unit, dll">
             </td>
             <td>
-                <input type="number" step="0.01" min="0" name="items[__INDEX__][harga]" class="form-control form-control-sm input-harga" required>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">Rp</span>
+                    <input type="text" name="items[__INDEX__][harga]" class="form-control form-control-sm input-harga" inputmode="numeric" placeholder="opsional">
+                </div>
             </td>
             <td>
                 <input type="text" class="form-control form-control-sm input-total" readonly>
@@ -169,6 +191,10 @@
         return new Intl.NumberFormat('id-ID').format(angka);
     }
 
+    function unformat(str) {
+        return parseFloat((str || '0').toString().replace(/\./g, '').replace(',', '.')) || 0;
+    }
+
     function tambahBaris(data = null) {
         const clone = template.content.cloneNode(true);
         clone.querySelectorAll('[name]').forEach(el => {
@@ -181,7 +207,7 @@
             row.querySelector('.input-nama-barang').value = data.nama_barang ?? '';
             row.querySelector('.input-qty').value = data.qty ?? '';
             row.querySelector('.input-satuan').value = data.satuan ?? '';
-            row.querySelector('.input-harga').value = data.harga ?? '';
+            row.querySelector('.input-harga').value = data.harga ? formatRupiah(data.harga) : '';
             row.querySelector('.input-total').value = formatRupiah((data.qty || 0) * (data.harga || 0));
         }
 
@@ -204,17 +230,25 @@
             if (opt && opt.value) {
                 namaInput.value = opt.dataset.nama || '';
                 satuanInput.value = opt.dataset.satuan || '';
-                hargaInput.value = opt.dataset.harga || 0;
+                hargaInput.value = opt.dataset.harga ? formatRupiah(opt.dataset.harga) : '';
             }
             hitungTotal(row);
         }
 
-        if (e.target.classList.contains('input-qty') || e.target.classList.contains('input-harga')) {
+        if (e.target.classList.contains('input-qty')) {
             hitungTotal(row);
         }
     });
 
     tbody.addEventListener('input', function (e) {
+        if (e.target.classList.contains('input-harga')) {
+            const cursorAtEnd = e.target.selectionStart === e.target.value.length;
+            const raw = unformat(e.target.value);
+            e.target.value = raw ? formatRupiah(raw) : '';
+            if (cursorAtEnd) {
+                e.target.setSelectionRange(e.target.value.length, e.target.value.length);
+            }
+        }
         if (e.target.classList.contains('input-qty') || e.target.classList.contains('input-harga')) {
             hitungTotal(e.target.closest('tr'));
         }
@@ -228,7 +262,7 @@
 
     function hitungTotal(row) {
         const qty = parseFloat(row.querySelector('.input-qty').value) || 0;
-        const harga = parseFloat(row.querySelector('.input-harga').value) || 0;
+        const harga = unformat(row.querySelector('.input-harga').value);
         row.querySelector('.input-total').value = formatRupiah(qty * harga);
     }
 
@@ -242,7 +276,18 @@
         if (tbody.querySelectorAll('.row-barang').length === 0) {
             e.preventDefault();
             alert('Tambahkan minimal 1 barang.');
+            return;
         }
+        document.querySelectorAll('.input-harga').forEach(el => {
+            el.value = unformat(el.value);
+        });
+    });
+
+    // toggle PPN
+    const pakaiPpnCheckbox = document.getElementById('pakai_ppn');
+    const wrapPpnPersen = document.getElementById('wrap-ppn-persen');
+    pakaiPpnCheckbox.addEventListener('change', function () {
+        wrapPpnPersen.style.display = this.checked ? '' : 'none';
     });
 </script>
 @endpush

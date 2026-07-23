@@ -89,11 +89,20 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">Catatan</label>
+                    <textarea name="catatan" id="input-catatan" class="form-control @error('catatan') is-invalid @enderror" rows="2" placeholder="Contoh: UNIT : AM EX 97">{{ old('catatan') }}</textarea>
+                    <div class="form-text">Catatan ini akan tampil di dalam tabel barang saat dicetak PDF.</div>
+                    @error('catatan')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
             </div>
         </div>
 
         <div class="card-box mb-3">
-            <h6 class="mb-3">Daftar Barang <small class="text-muted">(otomatis dari Delivery Note)</small></h6>
+            <h6 class="mb-3">Daftar Barang <small class="text-muted">(dari Delivery Note, harga bisa diubah manual)</small></h6>
 
             @error('items')
                 <div class="alert alert-danger py-2">{{ $message }}</div>
@@ -158,10 +167,22 @@
         return new Intl.NumberFormat('id-ID').format(angka);
     }
 
-    let currentItems = [];
+    function unformat(str) {
+        return parseFloat((str || '0').toString().replace(/\./g, '').replace(',', '.')) || 0;
+    }
+
+    let itemCount = 0;
 
     function hitungTotal() {
-        const subtotal = currentItems.reduce((sum, item) => sum + (item.qty * item.harga), 0);
+        let subtotal = 0;
+        tbodyBarang.querySelectorAll('tr.row-barang').forEach(row => {
+            const qty = parseFloat(row.querySelector('.input-qty').value) || 0;
+            const harga = unformat(row.querySelector('.input-harga').value);
+            const total = qty * harga;
+            row.querySelector('.cell-total').textContent = formatRupiah(total);
+            subtotal += total;
+        });
+
         const ppnPersen = parseFloat(inputPpn.value) || 0;
         const ppnNominal = subtotal * ppnPersen / 100;
         const total = subtotal + ppnNominal;
@@ -174,37 +195,55 @@
 
     function renderItems(items) {
         tbodyBarang.innerHTML = '';
+        itemCount = 0;
 
         if (!items || items.length === 0) {
             tbodyBarang.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Delivery Note ini tidak memiliki barang.</td></tr>';
             return;
         }
 
-        items.forEach((item, index) => {
+        items.forEach((item) => {
+            const index = itemCount;
             const tr = document.createElement('tr');
+            tr.className = 'row-barang';
+            const harga = item.harga ?? 0;
             tr.innerHTML = `
                 <td>
                     <input type="hidden" name="items[${index}][barang_id]" value="${item.barang_id ?? ''}">
-                    <input type="hidden" name="items[${index}][nama_barang]" value="${item.nama_barang}">
-                    ${item.nama_barang}
+                    <input type="text" name="items[${index}][nama_barang]" value="${item.nama_barang ?? ''}" class="form-control form-control-sm">
                 </td>
                 <td>
-                    <input type="hidden" name="items[${index}][qty]" value="${item.qty}">
-                    ${item.qty}
+                    <input type="number" step="0.01" min="0.01" name="items[${index}][qty]" value="${item.qty ?? 1}" class="form-control form-control-sm input-qty">
                 </td>
                 <td>
-                    <input type="hidden" name="items[${index}][satuan]" value="${item.satuan ?? ''}">
-                    ${item.satuan ?? '-'}
+                    <input type="text" name="items[${index}][satuan]" value="${item.satuan ?? ''}" class="form-control form-control-sm">
                 </td>
                 <td>
-                    <input type="hidden" name="items[${index}][harga]" value="${item.harga}">
-                    ${formatRupiah(item.harga)}
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">Rp</span>
+                        <input type="text" name="items[${index}][harga]" value="${harga ? formatRupiah(harga) : ''}" class="form-control form-control-sm input-harga" inputmode="numeric" placeholder="0">
+                    </div>
                 </td>
-                <td>${formatRupiah(item.qty * item.harga)}</td>
+                <td class="text-end cell-total">${formatRupiah((item.qty ?? 1) * harga)}</td>
             `;
             tbodyBarang.appendChild(tr);
+            itemCount++;
         });
     }
+
+    tbodyBarang.addEventListener('input', function (e) {
+        if (e.target.classList.contains('input-harga')) {
+            const cursorAtEnd = e.target.selectionStart === e.target.value.length;
+            const raw = unformat(e.target.value);
+            e.target.value = raw ? formatRupiah(raw) : '';
+            if (cursorAtEnd) {
+                e.target.setSelectionRange(e.target.value.length, e.target.value.length);
+            }
+        }
+        if (e.target.classList.contains('input-qty') || e.target.classList.contains('input-harga')) {
+            hitungTotal();
+        }
+    });
 
     selectPerusahaan.addEventListener('change', function () {
         const perusahaanId = this.value;
@@ -214,7 +253,6 @@
         selectRekening.innerHTML = '<option value="">-- Pilih Perusahaan Dahulu --</option>';
         displayCustomer.value = '';
         displayAlamat.value = '';
-        currentItems = [];
         renderItems([]);
         hitungTotal();
         btnSimpan.disabled = true;
@@ -231,7 +269,7 @@
                 data.forEach(dn => {
                     const opt = document.createElement('option');
                     opt.value = dn.id;
-                    opt.textContent = `${dn.no_delivery_note} (${dn.tanggal})`;
+                    opt.textContent = `${dn.no_delivery_note} (${dn.tanggal ?? '-'})`;
                     selectDn.appendChild(opt);
                 });
                 selectDn.disabled = false;
@@ -263,7 +301,6 @@
         if (!dnId) {
             displayCustomer.value = '';
             displayAlamat.value = '';
-            currentItems = [];
             renderItems([]);
             hitungTotal();
             btnSimpan.disabled = true;
@@ -277,7 +314,7 @@
                 displayAlamat.value = data.customer?.alamat ?? '';
                 inputNoPo.value = inputNoPo.value || data.no_po || '';
 
-                currentItems = (data.items || []).map(item => ({
+                const items = (data.items || []).map(item => ({
                     barang_id: item.barang_id,
                     nama_barang: item.nama_barang,
                     qty: item.qty,
@@ -285,19 +322,23 @@
                     harga: item.harga,
                 }));
 
-                renderItems(currentItems);
+                renderItems(items);
                 hitungTotal();
-                btnSimpan.disabled = currentItems.length === 0;
+                btnSimpan.disabled = items.length === 0;
             });
     });
 
     inputPpn.addEventListener('input', hitungTotal);
 
     document.getElementById('form-invoice').addEventListener('submit', function (e) {
-        if (currentItems.length === 0) {
+        if (tbodyBarang.querySelectorAll('tr.row-barang').length === 0) {
             e.preventDefault();
             alert('Pilih Delivery Note yang memiliki barang terlebih dahulu.');
+            return;
         }
+        document.querySelectorAll('.input-harga').forEach(el => {
+            el.value = unformat(el.value);
+        });
     });
 </script>
 @endpush

@@ -41,6 +41,12 @@
                 <div class="text-muted small">Rekening</div>
                 <div class="fw-semibold">{{ $invoice->rekening->nama_bank ?? '-' }} - {{ $invoice->rekening->no_rekening ?? '-' }} a.n {{ $invoice->rekening->atas_nama ?? '-' }}</div>
             </div>
+            @if($invoice->catatan)
+                <div class="col-md-12">
+                    <div class="text-muted small">Catatan</div>
+                    <div class="fw-semibold" style="white-space: pre-line;">{{ $invoice->catatan }}</div>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -66,6 +72,11 @@
                         <td>{{ number_format($item->total, 0, ',', '.') }}</td>
                     </tr>
                 @endforeach
+                @if($invoice->catatan)
+                    <tr>
+                        <td colspan="5" style="white-space: pre-line;">{{ $invoice->catatan }}</td>
+                    </tr>
+                @endif
             </tbody>
         </table>
 

@@ -18,10 +18,16 @@ class DeliveryNoteController extends Controller
                 $query->where('no_delivery_note', 'like', "%{$search}%")
                     ->orWhere('no_po', 'like', "%{$search}%");
             })
+            ->when($request->perusahaan_id, function ($query, $perusahaanId) {
+                $query->where('perusahaan_id', $perusahaanId);
+            })
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('transaksi.delivery-note.index', compact('deliveryNotes'));
+        $perusahaans = Perusahaan::orderBy('nama_perusahaan')->get();
+
+        return view('transaksi.delivery-note.index', compact('deliveryNotes', 'perusahaans'));
     }
 
     public function create()
@@ -40,36 +46,45 @@ class DeliveryNoteController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'no_po' => 'nullable|string|max:100',
             'no_delivery_note' => 'required|string|max:100',
-            'tanggal' => 'required|date',
+            'tanggal' => 'nullable|date',
             'catatan' => 'nullable|string',
+            'pakai_ppn' => 'nullable|boolean',
+            'ppn_persen' => 'nullable|numeric|min:0|max:100',
 
             'items' => 'required|array|min:1',
             'items.*.barang_id' => 'nullable|exists:barangs,id',
             'items.*.nama_barang' => 'required|string|max:255',
-            'items.*.qty' => 'required|numeric|min:0.01',
+            'items.*.qty' => 'nullable|numeric|min:0',
             'items.*.satuan' => 'nullable|string|max:50',
-            'items.*.harga' => 'required|numeric|min:0',
+            'items.*.harga' => 'nullable|numeric|min:0',
         ]);
 
         DB::transaction(function () use ($validated, $request) {
+            $pakaiPpn = $request->boolean('pakai_ppn');
+
             $deliveryNote = DeliveryNote::create([
                 'perusahaan_id' => $validated['perusahaan_id'],
                 'customer_id' => $validated['customer_id'],
                 'user_id' => $request->user()->id,
                 'no_po' => $validated['no_po'] ?? null,
                 'no_delivery_note' => $validated['no_delivery_note'],
-                'tanggal' => $validated['tanggal'],
+                'tanggal' => $validated['tanggal'] ?? null,
                 'catatan' => $validated['catatan'] ?? null,
+                'pakai_ppn' => $pakaiPpn,
+                'ppn_persen' => $pakaiPpn ? ($validated['ppn_persen'] ?? 11) : null,
             ]);
 
             foreach ($validated['items'] as $item) {
+                $qty = $item['qty'] ?? 0;
+                $harga = $item['harga'] ?? 0;
+
                 $deliveryNote->items()->create([
                     'barang_id' => $item['barang_id'] ?? null,
                     'nama_barang' => $item['nama_barang'],
-                    'qty' => $item['qty'],
+                    'qty' => $item['qty'] ?? null,
                     'satuan' => $item['satuan'] ?? null,
-                    'harga' => $item['harga'],
-                    'total' => $item['qty'] * $item['harga'],
+                    'harga' => $item['harga'] ?? null,
+                    'total' => $qty * $harga,
                 ]);
             }
         });
@@ -100,37 +115,46 @@ class DeliveryNoteController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'no_po' => 'nullable|string|max:100',
             'no_delivery_note' => 'required|string|max:100',
-            'tanggal' => 'required|date',
+            'tanggal' => 'nullable|date',
             'catatan' => 'nullable|string',
+            'pakai_ppn' => 'nullable|boolean',
+            'ppn_persen' => 'nullable|numeric|min:0|max:100',
 
             'items' => 'required|array|min:1',
             'items.*.barang_id' => 'nullable|exists:barangs,id',
             'items.*.nama_barang' => 'required|string|max:255',
-            'items.*.qty' => 'required|numeric|min:0.01',
+            'items.*.qty' => 'nullable|numeric|min:0',
             'items.*.satuan' => 'nullable|string|max:50',
-            'items.*.harga' => 'required|numeric|min:0',
+            'items.*.harga' => 'nullable|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($validated, $deliveryNote) {
+        DB::transaction(function () use ($validated, $deliveryNote, $request) {
+            $pakaiPpn = $request->boolean('pakai_ppn');
+
             $deliveryNote->update([
                 'perusahaan_id' => $validated['perusahaan_id'],
                 'customer_id' => $validated['customer_id'],
                 'no_po' => $validated['no_po'] ?? null,
                 'no_delivery_note' => $validated['no_delivery_note'],
-                'tanggal' => $validated['tanggal'],
+                'tanggal' => $validated['tanggal'] ?? null,
                 'catatan' => $validated['catatan'] ?? null,
+                'pakai_ppn' => $pakaiPpn,
+                'ppn_persen' => $pakaiPpn ? ($validated['ppn_persen'] ?? 11) : null,
             ]);
 
             $deliveryNote->items()->delete();
 
             foreach ($validated['items'] as $item) {
+                $qty = $item['qty'] ?? 0;
+                $harga = $item['harga'] ?? 0;
+
                 $deliveryNote->items()->create([
                     'barang_id' => $item['barang_id'] ?? null,
                     'nama_barang' => $item['nama_barang'],
-                    'qty' => $item['qty'],
+                    'qty' => $item['qty'] ?? null,
                     'satuan' => $item['satuan'] ?? null,
-                    'harga' => $item['harga'],
-                    'total' => $item['qty'] * $item['harga'],
+                    'harga' => $item['harga'] ?? null,
+                    'total' => $qty * $harga,
                 ]);
             }
         });

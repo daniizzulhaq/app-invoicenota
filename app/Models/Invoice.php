@@ -13,7 +13,7 @@ class Invoice extends Model
 
     protected $fillable = [
         'perusahaan_id', 'delivery_note_id', 'customer_id', 'rekening_id',
-        'user_id', 'no_invoice', 'tanggal_invoice', 'no_po',
+        'user_id', 'no_invoice', 'tanggal_invoice', 'no_po', 'catatan',
         'subtotal', 'ppn_persen', 'ppn_nominal', 'total',
     ];
 

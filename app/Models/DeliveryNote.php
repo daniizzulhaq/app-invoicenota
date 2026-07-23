@@ -15,10 +15,13 @@ class DeliveryNote extends Model
     protected $fillable = [
         'perusahaan_id', 'customer_id', 'user_id', 'no_po',
         'no_delivery_note', 'tanggal', 'catatan',
+        'pakai_ppn', 'ppn_persen',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
+        'pakai_ppn' => 'boolean',
+        'ppn_persen' => 'decimal:2',
     ];
 
     public function perusahaan(): BelongsTo
@@ -49,5 +52,24 @@ class DeliveryNote extends Model
     public function getSudahDiinvoiceAttribute(): bool
     {
         return $this->invoice()->exists();
+    }
+
+    public function getSubtotalAttribute()
+    {
+        return $this->items->sum('total');
+    }
+
+    public function getPpnNominalAttribute()
+    {
+        if (!$this->pakai_ppn) {
+            return 0;
+        }
+
+        return $this->subtotal * ($this->ppn_persen / 100);
+    }
+
+    public function getGrandTotalAttribute()
+    {
+        return $this->subtotal + $this->ppn_nominal;
     }
 }

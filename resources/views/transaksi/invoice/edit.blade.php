@@ -80,6 +80,15 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">Catatan</label>
+                    <textarea name="catatan" class="form-control @error('catatan') is-invalid @enderror" rows="2" placeholder="Contoh: UNIT : AM EX 97">{{ old('catatan', $invoice->catatan) }}</textarea>
+                    <div class="form-text">Catatan ini akan tampil di dalam tabel barang saat dicetak PDF.</div>
+                    @error('catatan')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
             </div>
         </div>
 

@@ -5,7 +5,7 @@
     <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
     <title>Invoice - {{ $invoice->no_invoice }}</title>
     <style>
-        @page { size: A4; margin: 0; }
+        @page { size: A4; margin: 15mm 15mm 15mm 15mm; }
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; background: #e9ecef; font-family: 'Calibri', 'Carlito', Arial, sans-serif; }
         .page {
@@ -13,7 +13,7 @@
             min-height: 297mm;
             margin: 10mm auto;
             background: #fff;
-            padding: 15mm;
+            padding: 0;
             font-size: 12px;
             color: #000;
             box-shadow: 0 0 6px rgba(0,0,0,0.15);
@@ -69,17 +69,54 @@
         table.items { width: 100%; border-collapse: collapse; table-layout: fixed; }
         table.items th, table.items td { border: 1px solid #000; padding: 3px 6px; }
         table.items th { background: #f0f0f0; font-size: 9.5px; text-align: center; font-weight: bold; white-space: nowrap; overflow: hidden; }
-        table.items td { font-size: 10.5px; vertical-align: middle; height: 22px; }
+        table.items td { font-size: 10.5px; vertical-align: middle; height: 19px; }
         table.items td.no { text-align: center; }
         table.items td.qty { text-align: center; }
         table.items td.unit { text-align: center; }
         table.items td.price, table.items td.total { text-align: right; white-space: nowrap; }
         table.items td.empty-desc { text-align: left; }
 
-        table.items tfoot td { border: 1px solid #000; padding: 4px 6px; font-size: 11px; }
-        table.items tfoot td.label { text-align: right; }
-        table.items tfoot td.value { text-align: right; white-space: nowrap; }
-        table.items tfoot tr.grand-total td { font-weight: bold; }
+        /* Body rows: only the NO column keeps a horizontal line per row.
+           Other columns are borderless inside the box (outer box border only). */
+        table.items tbody td {
+            height: 19px;
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
+            border-top: none;
+            border-bottom: none;
+        }
+        table.items tbody tr:first-child td {
+            border-top: 1px solid #000;
+        }
+        table.items tbody tr:last-child td {
+            border-bottom: none;
+        }
+        table.items tbody td.no.has-number {
+            border-top: none;
+        }
+
+        .catatan-cell {
+            font-weight: bold;
+            white-space: pre-line;
+            display: inline-block;
+        }
+
+        table.items tfoot .summary-row td {
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
+            border-top: none;
+            border-bottom: none;
+            padding: 4px 6px;
+            font-size: 11px;
+        }
+        table.items tfoot .summary-row td.label { text-align: right; }
+        table.items tfoot .summary-row td.value { text-align: right; white-space: nowrap; }
+        table.items tfoot .summary-row:first-child td { border-top: none !important; }
+        table.items tfoot .summary-row.grand-total td {
+            font-weight: bold;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+        }
 
         .terbilang { margin-top: 12px; font-size: 11px; font-style: italic; }
 
@@ -102,9 +139,13 @@
         }
         .footer .box .jabatan { font-size: 10.5px; margin-top: 2px; }
 
+        @media screen {
+            .page { padding: 15mm; }
+        }
+
         @media print {
             body { background: #fff; }
-            .page { margin: 0; box-shadow: none; }
+            .page { margin: 0; padding: 0; box-shadow: none; }
             .toolbar { display: none !important; }
         }
     </style>
@@ -116,7 +157,7 @@
 </div>
 
 @php
-    $perPage = 25;
+    $perPage = 20;
     $allItems = $invoice->items;
     $totalItems = $allItems->count();
     $totalPages = max(1, (int) ceil($totalItems / $perPage));
@@ -128,6 +169,7 @@
         $pageItems = $allItems->slice($startIndex, $perPage);
         $isLastPage = ($page === $totalPages - 1);
         $filledOnThisPage = $pageItems->count();
+        $hasCatatan = $isLastPage && filled($invoice->catatan);
     @endphp
 
     <div class="page">
@@ -203,7 +245,7 @@
             <tbody>
                 @foreach($pageItems as $localIndex => $item)
                     <tr>
-                        <td class="no">{{ $startIndex + $localIndex + 1 }}</td>
+                        <td class="no has-number">{{ $startIndex + $localIndex + 1 }}</td>
                         <td>{{ strtoupper($item->nama_barang) }}</td>
                         <td class="qty">{{ rtrim(rtrim(number_format($item->qty, 2, ',', '.'), '0'), ',') }}</td>
                         <td class="unit">{{ $item->satuan ?? '-' }}</td>
@@ -211,12 +253,21 @@
                         <td class="total">{{ number_format($item->total, 0, ',', '.') }}</td>
                     </tr>
                 @endforeach
-                {{-- Blank filler rows so the box has a consistent printed-form height --}}
-                @php $fillerCount = max(0, ($isLastPage ? 12 : $perPage) - $filledOnThisPage); @endphp
+
+                {{-- Blank filler rows so the box has a consistent printed-form height, up to $perPage per page --}}
+                @php
+                    $fillerCount = max(0, $perPage - $filledOnThisPage);
+                @endphp
                 @for($i = 0; $i < $fillerCount; $i++)
                     <tr>
                         <td class="no">&nbsp;</td>
-                        <td>&nbsp;</td>
+                        <td>
+                            @if($hasCatatan && $i === 0)
+                                <span class="catatan-cell">{{ $invoice->catatan }}</span>
+                            @else
+                                &nbsp;
+                            @endif
+                        </td>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
@@ -226,19 +277,28 @@
             </tbody>
             @if($isLastPage)
                 <tfoot>
-                    <tr>
-                        <td colspan="4" style="border: none;"></td>
-                        <td class="label">Subtotal</td>
+                    <tr class="summary-row">
+                        <td class="no">&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td class="label">SUBTOTAL</td>
                         <td class="value">{{ number_format($invoice->subtotal, 0, ',', '.') }}</td>
                     </tr>
-                    <tr>
-                        <td colspan="4" style="border: none;"></td>
-                        <td class="label">PPN ({{ $invoice->ppn_persen }}%)</td>
+                    <tr class="summary-row">
+                        <td class="no">&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td class="label">PPN ({{ rtrim(rtrim(number_format($invoice->ppn_persen, 2, ',', '.'), '0'), ',') }}%)</td>
                         <td class="value">{{ number_format($invoice->ppn_nominal, 0, ',', '.') }}</td>
                     </tr>
-                    <tr class="grand-total">
-                        <td colspan="4" style="border: none;"></td>
-                        <td class="label">Total</td>
+                    <tr class="summary-row grand-total">
+                        <td class="no">&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td class="label">TOTAL</td>
                         <td class="value">{{ number_format($invoice->total, 0, ',', '.') }}</td>
                     </tr>
                 </tfoot>
@@ -259,7 +319,7 @@
             <div class="footer">
                 <div class="box">
                     <div>
-                        {{ $invoice->perusahaan->kota ?? '' }}, {{ \Carbon\Carbon::parse($invoice->tanggal_invoice)->translatedFormat('d F Y') }}
+                        Sangatta, {{ \Carbon\Carbon::parse($invoice->tanggal_invoice)->translatedFormat('d F Y') }}
                     </div>
                     <div class="ttd-space"></div>
                     <div class="nama-line">{{ $invoice->perusahaan->nama_direktur ?? $invoice->perusahaan->nama_perusahaan ?? '-' }}</div>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Delivery Note - {{ $deliveryNote->no_delivery_note }}</title>
     <style>
-        @page { size: A4; margin: 0; }
+        @page { size: 9.5in 5.5in; margin: 5mm; }
         * { box-sizing: border-box; }
         html, body {
             margin: 0;
@@ -13,12 +13,12 @@
             font-family: 'Calibri', 'Carlito', Arial, sans-serif;
         }
         .page {
-            width: 210mm;
-            min-height: 297mm;
-            margin: 10mm auto;
+            width: 9.5in;
+            min-height: 5.5in;
+            margin: 5mm auto;
             background: #fff;
-            padding: 15mm;
-            font-size: 12px;
+            padding: 6mm 8mm;
+            font-size: 10.5px;
             color: #000;
             box-shadow: 0 0 6px rgba(0,0,0,0.15);
             page-break-after: always;
@@ -26,8 +26,8 @@
         .page:last-child { page-break-after: auto; }
 
         .toolbar {
-            width: 210mm;
-            margin: 10mm auto 0 auto;
+            width: 9.5in;
+            margin: 5mm auto 0 auto;
             text-align: center;
         }
         .toolbar button {
@@ -114,21 +114,53 @@
             font-size: 10px;
             text-align: center;
         }
-        table.items td { font-size: 10.5px; }
+        table.items td { font-size: 10.5px; vertical-align: middle; }
         table.items td.no { text-align: center; }
         table.items td.qty { text-align: center; }
         table.items td.unit { text-align: center; }
         table.items td.price,
         table.items td.total { text-align: right; white-space: nowrap; }
-        table.items tr.empty-row td { height: 15px; }
 
-        .total-row td {
-            font-weight: bold;
-            text-align: right;
+        table.items tbody td {
+            height: 22px;
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
+            border-top: none;
+            border-bottom: none;
         }
-        .total-row td.total-label {
+        table.items tbody td.no {
+            border-top: none;
+            border-bottom: none;
+        }
+        table.items tbody tr:first-child td {
+            border-top: 1px solid #000;
+        }
+        table.items tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .summary-row td {
+            font-weight: normal;
+            text-align: right;
+            border-top: none;
+            border-bottom: none;
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
+        }
+        .summary-row td.total-label {
             text-align: center;
             font-size: 10px;
+        }
+        .summary-row:first-of-type td {
+            border-top: none;
+        }
+        .summary-row.grand-total td {
+            font-weight: bold;
+            border-top: 1px solid #000 !important;
+            border-bottom: 1px solid #000 !important;
+        }
+        .summary-row:last-child td {
+            border-bottom: 1px solid #000;
         }
 
         .catatan {
@@ -144,14 +176,21 @@
         .footer {
             display: flex;
             justify-content: space-between;
-            margin-top: 35px;
+            align-items: flex-start;
+            margin-top: 20px;
         }
         .footer .box {
             width: 45%;
-            font-size: 10.5px;
+            font-size: 10px;
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .footer .box .ttd-space { height: 55px; }
+        .footer .box .box-heading {
+            min-height: 14px;
+        }
+        .footer .box .ttd-space { height: 45px; width: 100%; }
         .footer .box .nama-line {
             border-top: 1px solid #000;
             margin-top: 4px;
@@ -178,7 +217,11 @@
     $allItems = $deliveryNote->items;
     $totalItems = $allItems->count();
     $totalPages = max(1, (int) ceil($totalItems / $perPage));
-    $grandTotal = $allItems->sum('total');
+    $subtotal = $allItems->sum('total');
+    $pakaiPpn = (bool) $deliveryNote->pakai_ppn;
+    $ppnPersen = $deliveryNote->ppn_persen ?? 0;
+    $ppnNominal = $pakaiPpn ? ($subtotal * $ppnPersen / 100) : 0;
+    $grandTotal = $subtotal + $ppnNominal;
 @endphp
 
 @for($page = 0; $page < $totalPages; $page++)
@@ -262,20 +305,50 @@
                 @for($i = $filledOnThisPage; $i < $perPage; $i++)
                     <tr class="empty-row">
                         <td class="no">{{ $startIndex + $i + 1 }}</td>
+                        <td class="desc">&nbsp;</td>
                         <td>&nbsp;</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
                     </tr>
                 @endfor
 
                 @if($isLastPage)
-                    <tr class="total-row">
-                        <td colspan="4"></td>
-                        <td class="total-label">TOTAL<br>AMOUNT</td>
-                        <td class="total">{{ number_format($grandTotal, 0, ',', '.') }}</td>
-                    </tr>
+                    @if($pakaiPpn)
+                        <tr class="summary-row">
+                            <td class="no">&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td class="total-label">SUBTOTAL</td>
+                            <td class="total">{{ number_format($subtotal, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr class="summary-row">
+                            <td class="no">&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td class="total-label">PPN ({{ rtrim(rtrim(number_format($ppnPersen, 2, ',', '.'), '0'), ',') }}%)</td>
+                            <td class="total">{{ number_format($ppnNominal, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr class="summary-row grand-total">
+                            <td class="no">&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td class="total-label">TOTAL</td>
+                            <td class="total">{{ number_format($grandTotal, 0, ',', '.') }}</td>
+                        </tr>
+                    @else
+                        <tr class="summary-row grand-total">
+                            <td class="no">&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td class="total-label">TOTAL</td>
+                            <td class="total">{{ number_format($grandTotal, 0, ',', '.') }}</td>
+                        </tr>
+                    @endif
                 @endif
             </tbody>
         </table>
@@ -291,12 +364,12 @@
 
             <div class="footer">
                 <div class="box">
+                    <div class="box-heading">&nbsp;</div>
                     <div class="ttd-space"></div>
                     <div class="nama-line">Penerima</div>
                 </div>
                 <div class="box">
-                    <div>{{ $deliveryNote->perusahaan->alamat ?? '' }}, {{ \Carbon\Carbon::parse($deliveryNote->tanggal)->translatedFormat('d F Y') }}</div>
-                    <div style="margin-top:2px;">Hormat Kami,</div>
+                    <div class="box-heading">Sangatta, {{ \Carbon\Carbon::parse($deliveryNote->tanggal)->translatedFormat('d F Y') }}</div>
                     <div class="ttd-space"></div>
                     <div class="nama-line">{{ $deliveryNote->perusahaan->nama_perusahaan ?? '-' }}</div>
                 </div>

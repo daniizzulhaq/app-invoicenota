@@ -13,9 +13,24 @@
             <div class="col-md-4">
                 <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Cari No. Delivery Note / No. PO">
             </div>
+            <div class="col-md-4">
+                <select name="perusahaan_id" class="form-select">
+                    <option value="">-- Semua Perusahaan --</option>
+                    @foreach($perusahaans as $perusahaan)
+                        <option value="{{ $perusahaan->id }}" {{ request('perusahaan_id') == $perusahaan->id ? 'selected' : '' }}>
+                            {{ $perusahaan->nama_perusahaan }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-secondary w-100">Cari</button>
             </div>
+            @if(request('search') || request('perusahaan_id'))
+                <div class="col-md-2">
+                    <a href="{{ route('delivery-note.index') }}" class="btn btn-outline-secondary w-100">Reset</a>
+                </div>
+            @endif
         </form>
     </div>
 
@@ -38,7 +53,7 @@
                         <td>{{ $loop->iteration + ($deliveryNotes->currentPage() - 1) * $deliveryNotes->perPage() }}</td>
                         <td>{{ $dn->no_delivery_note }}</td>
                         <td>{{ $dn->no_po ?? '-' }}</td>
-                        <td>{{ \Carbon\Carbon::parse($dn->tanggal)->format('d-m-Y') }}</td>
+                        <td>{{ $dn->tanggal ? \Carbon\Carbon::parse($dn->tanggal)->format('d-m-Y') : '-' }}</td>
                         <td>{{ $dn->perusahaan->nama_perusahaan ?? '-' }}</td>
                         <td>{{ $dn->customer->nama_customer ?? '-' }}</td>
                         <td>
