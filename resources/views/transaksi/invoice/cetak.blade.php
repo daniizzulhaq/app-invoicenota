@@ -157,7 +157,7 @@
 </div>
 
 @php
-    $perPage = 20;
+    $perPage = 15;
     $allItems = $invoice->items;
     $totalItems = $allItems->count();
     $totalPages = max(1, (int) ceil($totalItems / $perPage));
