@@ -14,7 +14,7 @@
             margin: 10mm auto;
             background: #fff;
             padding: 0;
-            font-size: 12px;
+            font-size: 17px;
             color: #000;
             box-shadow: 0 0 6px rgba(0,0,0,0.15);
             page-break-after: always;
@@ -40,21 +40,21 @@
 
         /* Header: company name + address, centered */
         .company-header { text-align: center; }
-        .company-name { font-size: 20px; font-weight: bold; margin: 0 0 4px 0; letter-spacing: 0.5px; }
-        .company-detail { font-size: 10.5px; line-height: 1.6; margin: 0; }
+        .company-name { font-size: 27px; font-weight: bold; margin: 0 0 4px 0; letter-spacing: 0.5px; }
+        .company-detail { font-size: 15px; line-height: 1.6; margin: 0; }
 
         .divider { border-bottom: 2px solid #000; margin: 8px 0 10px 0; }
 
         .title-box { text-align: center; margin: 4px 0 14px 0; }
-        .title-box h2 { margin: 0; font-size: 14px; text-decoration: underline; letter-spacing: 2px; }
-        .title-box .page-indicator { font-size: 10px; margin-top: 2px; font-style: italic; }
+        .title-box h2 { margin: 0; font-size: 20px; text-decoration: underline; letter-spacing: 2px; }
+        .title-box .page-indicator { font-size: 14px; margin-top: 2px; font-style: italic; }
 
         /* Invoice meta (left) + customer block (right) */
         .top-info {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            font-size: 11px;
+            font-size: 15px;
             margin-bottom: 12px;
         }
         .invoice-meta table { border-collapse: collapse; }
@@ -64,12 +64,12 @@
 
         .customer-info { text-align: right; max-width: 260px; }
         .customer-info .nama-customer { font-weight: bold; }
-        .customer-info .alamat-customer { font-size: 10.5px; line-height: 1.5; }
+        .customer-info .alamat-customer { font-size: 15px; line-height: 1.5; }
 
         table.items { width: 100%; border-collapse: collapse; table-layout: fixed; }
         table.items th, table.items td { border: 1px solid #000; padding: 3px 6px; }
-        table.items th { background: #f0f0f0; font-size: 9.5px; text-align: center; font-weight: bold; white-space: nowrap; overflow: hidden; }
-        table.items td { font-size: 10.5px; vertical-align: middle; height: 19px; }
+        table.items th { background: #f0f0f0; font-size: 14px; text-align: center; font-weight: bold; white-space: normal; overflow: visible; }
+        table.items td { font-size: 15px; vertical-align: middle; height: 21px; }
         table.items td.no { text-align: center; }
         table.items td.qty { text-align: center; }
         table.items td.unit { text-align: center; }
@@ -107,7 +107,7 @@
             border-top: none;
             border-bottom: none;
             padding: 4px 6px;
-            font-size: 11px;
+            font-size: 15px;
         }
         table.items tfoot .summary-row td.label { text-align: right; }
         table.items tfoot .summary-row td.value { text-align: right; white-space: nowrap; }
@@ -118,17 +118,17 @@
             border-bottom: 1px solid #000;
         }
 
-        .terbilang { margin-top: 12px; font-size: 11px; font-style: italic; }
+        .terbilang { margin-top: 12px; font-size: 15px; font-style: italic; }
 
-        .rekening-info { margin-top: 14px; font-size: 11px; line-height: 1.6; }
+        .rekening-info { margin-top: 14px; font-size: 15px; line-height: 1.6; }
 
         .footer {
             display: flex;
             justify-content: flex-end;
             margin-top: 10px;
         }
-        .footer .box { width: 45%; font-size: 11px; text-align: center; }
-        .footer .box .ttd-space { height: 60px; }
+        .footer .box { width: 45%; font-size: 15px; text-align: center; }
+        .footer .box .ttd-space { height: 160px; }
         .footer .box .nama-line {
             border-top: 1px solid #000;
             margin-top: 4px;
@@ -137,7 +137,7 @@
             min-width: 180px;
             font-weight: bold;
         }
-        .footer .box .jabatan { font-size: 10.5px; margin-top: 2px; }
+        .footer .box .jabatan { font-size: 14px; margin-top: 2px; }
 
         @media screen {
             .page { padding: 15mm; }
@@ -227,8 +227,8 @@
             <colgroup>
                 <col style="width:28px;">
                 <col>
-                <col style="width:65px;">
-                <col style="width:38px;">
+                <col style="width:70px;">
+                <col style="width:55px;">
                 <col style="width:90px;">
                 <col style="width:100px;">
             </colgroup>

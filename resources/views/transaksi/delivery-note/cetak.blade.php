@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <title>Delivery Note - {{ $deliveryNote->no_delivery_note }}</title>
     <style>
-        @page { size: 9.5in 5.5in; margin: 5mm; }
+        /* Kertas Continuous Form K3W - Portrait */
+        @page { size: 9.5in 11in; margin: 3mm 6mm; }
         * { box-sizing: border-box; }
         html, body {
             margin: 0;
@@ -14,11 +15,11 @@
         }
         .page {
             width: 9.5in;
-            min-height: 5.5in;
+            min-height: 11in;
             margin: 5mm auto;
             background: #fff;
-            padding: 6mm 8mm;
-            font-size: 10.5px;
+            padding: 3mm 6mm 6mm 6mm;
+            font-size: 17px;
             color: #000;
             box-shadow: 0 0 6px rgba(0,0,0,0.15);
             page-break-after: always;
@@ -47,57 +48,57 @@
             justify-content: space-between;
             align-items: flex-start;
             border-bottom: 2px solid #000;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
         }
         .company-name {
-            font-size: 22px;
+            font-size: 31px;
             font-weight: bold;
             letter-spacing: 0.3px;
-            margin: 0 0 4px 0;
+            margin: 0 0 5px 0;
         }
         .company-sub {
-            font-size: 10px;
+            font-size: 16px;
             font-weight: bold;
-            margin: 0 0 2px 0;
+            margin: 0 0 3px 0;
         }
         .company-detail {
-            font-size: 11px;
+            font-size: 17px;
             line-height: 1.6;
             margin: 0;
         }
         .kepada {
             text-align: right;
-            font-size: 12px;
+            font-size: 18px;
             padding-top: 4px;
             margin-right: 40px;
         }
-        .kepada .nama-customer { font-weight: bold; font-size: 13px; margin-top: 3px; }
+        .kepada .nama-customer { font-weight: bold; font-size: 19px; margin-top: 4px; }
 
         .title-box {
             text-align: center;
-            margin: 8px 0 12px 0;
+            margin: 10px 0 14px 0;
         }
         .title-box h2 {
             margin: 0;
-            font-size: 15px;
+            font-size: 23px;
             text-decoration: underline;
             letter-spacing: 1px;
         }
         .title-box .no-dn {
-            font-size: 11px;
-            margin-top: 2px;
+            font-size: 17px;
+            margin-top: 3px;
         }
         .title-box .page-indicator {
-            font-size: 10px;
-            margin-top: 2px;
+            font-size: 16px;
+            margin-top: 3px;
             font-style: italic;
         }
 
         .info-po {
             text-align: right;
-            font-size: 11px;
-            margin-bottom: 6px;
+            font-size: 17px;
+            margin-bottom: 8px;
         }
 
         table.items {
@@ -107,14 +108,16 @@
         }
         table.items th, table.items td {
             border: 1px solid #000;
-            padding: 3px 5px;
+            padding: 5px 7px;
         }
         table.items th {
             background: #f0f0f0;
-            font-size: 10px;
+            font-size: 16px;
             text-align: center;
+            white-space: normal;
+            overflow: visible;
         }
-        table.items td { font-size: 10.5px; vertical-align: middle; }
+        table.items td { font-size: 17px; vertical-align: middle; }
         table.items td.no { text-align: center; }
         table.items td.qty { text-align: center; }
         table.items td.unit { text-align: center; }
@@ -122,7 +125,7 @@
         table.items td.total { text-align: right; white-space: nowrap; }
 
         table.items tbody td {
-            height: 22px;
+            height: 24px;
             border-left: 1px solid #000;
             border-right: 1px solid #000;
             border-top: none;
@@ -149,7 +152,7 @@
         }
         .summary-row td.total-label {
             text-align: center;
-            font-size: 10px;
+            font-size: 16px;
         }
         .summary-row:first-of-type td {
             border-top: none;
@@ -164,39 +167,39 @@
         }
 
         .catatan {
-            font-size: 10px;
-            margin-top: 6px;
+            font-size: 16px;
+            margin-top: 8px;
             font-style: italic;
         }
         .ket-terima {
-            font-size: 10.5px;
-            margin-top: 10px;
+            font-size: 17px;
+            margin-top: 12px;
         }
 
         .footer {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-top: 20px;
+            margin-top: 24px;
         }
         .footer .box {
             width: 45%;
-            font-size: 10px;
+            font-size: 16px;
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
         .footer .box .box-heading {
-            min-height: 14px;
+            min-height: 16px;
         }
-        .footer .box .ttd-space { height: 45px; width: 100%; }
+        .footer .box .ttd-space { height: 50px; width: 100%; }
         .footer .box .nama-line {
             border-top: 1px solid #000;
             margin-top: 4px;
             padding-top: 4px;
             display: inline-block;
-            min-width: 160px;
+            min-width: 180px;
         }
 
         @media print {
@@ -213,7 +216,7 @@
 </div>
 
 @php
-    $perPage = 25;
+    $perPage = 12;
     $allItems = $deliveryNote->items;
     $totalItems = $allItems->count();
     $totalPages = max(1, (int) ceil($totalItems / $perPage));
@@ -270,12 +273,12 @@
 
         <table class="items">
             <colgroup>
-                <col style="width:28px;">
+                <col style="width:32px;">
                 <col>
-                <col style="width:60px;">
-                <col style="width:45px;">
                 <col style="width:80px;">
-                <col style="width:90px;">
+                <col style="width:65px;">
+                <col style="width:95px;">
+                <col style="width:105px;">
             </colgroup>
             <thead>
                 <tr>
@@ -304,7 +307,7 @@
                 @endphp
                 @for($i = $filledOnThisPage; $i < $perPage; $i++)
                     <tr class="empty-row">
-                        <td class="no">{{ $startIndex + $i + 1 }}</td>
+                        <td class="no">&nbsp;</td>
                         <td class="desc">&nbsp;</td>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
