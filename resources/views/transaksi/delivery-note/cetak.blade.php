@@ -5,7 +5,7 @@
     <title>Delivery Note - {{ $deliveryNote->no_delivery_note }}</title>
     <style>
         /* Kertas Continuous Form K3W - Portrait */
-        @page { size: 9.5in 11in; margin: 3mm 6mm; }
+        @page { size: 9.5in 11in; margin: 3mm 6mm 3mm 2mm; }
         * { box-sizing: border-box; }
         html, body {
             margin: 0;
@@ -199,7 +199,7 @@
         .footer .box .box-heading {
             min-height: 16px;
         }
-        .footer .box .ttd-space { height: 50px; width: 100%; }
+        .footer .box .ttd-space { height: 100px; width: 100%; }
         .footer .box .nama-line {
             border-top: 1px solid #000;
             margin-top: 4px;
@@ -378,7 +378,7 @@
                     <div class="nama-line">Penerima</div>
                 </div>
                 <div class="box">
-                    <div class="box-heading">Sangatta, {{ \Carbon\Carbon::parse($deliveryNote->tanggal)->translatedFormat('d F Y') }}</div>
+                  <div class="box-heading">Sangatta, {{ $deliveryNote->tanggal ? \Carbon\Carbon::parse($deliveryNote->tanggal)->translatedFormat('d F Y') : '' }}</div>
                     <div class="ttd-space"></div>
                     <div class="nama-line">{{ $deliveryNote->perusahaan->nama_perusahaan ?? '-' }}</div>
                 </div>

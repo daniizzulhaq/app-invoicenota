@@ -31,7 +31,7 @@
             </div>
             <div class="col-md-4">
                 <div class="text-muted small">Tanggal</div>
-                <div class="fw-semibold">{{ \Carbon\Carbon::parse($deliveryNote->tanggal)->format('d-m-Y') }}</div>
+                <div class="fw-semibold">{{ $deliveryNote->tanggal ? \Carbon\Carbon::parse($deliveryNote->tanggal)->format('d-m-Y') : '-' }}</div>
             </div>
             @if($deliveryNote->catatan)
             <div class="col-12">

@@ -11,16 +11,23 @@ use Illuminate\Support\Facades\DB;
 class InvoiceController extends Controller
 {
     public function index(Request $request)
-    {
-        $invoices = Invoice::with(['perusahaan', 'customer', 'deliveryNote'])
-            ->when($request->search, function ($query, $search) {
-                $query->where('no_invoice', 'like', "%{$search}%");
-            })
-            ->latest()
-            ->paginate(10);
+{
+    $invoices = Invoice::with(['perusahaan', 'customer', 'deliveryNote'])
+        ->when($request->search, function ($query, $search) {
+            $query->where('no_invoice', 'like', "%{$search}%")
+                ->orWhere('no_po', 'like', "%{$search}%");
+        })
+        ->when($request->perusahaan_id, function ($query, $perusahaanId) {
+            $query->where('perusahaan_id', $perusahaanId);
+        })
+        ->latest()
+        ->paginate(10)
+        ->withQueryString();
 
-        return view('transaksi.invoice.index', compact('invoices'));
-    }
+    $perusahaans = Perusahaan::orderBy('nama_perusahaan')->get();
+
+    return view('transaksi.invoice.index', compact('invoices', 'perusahaans'));
+}
 
     public function create()
     {

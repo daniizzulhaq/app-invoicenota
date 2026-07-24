@@ -61,7 +61,7 @@
 
                 <div class="col-md-4">
                     <label class="form-label">Tanggal</label>
-                    <input type="date" name="tanggal" value="{{ old('tanggal', date('Y-m-d')) }}" class="form-control @error('tanggal') is-invalid @enderror">
+                    <input type="date" name="tanggal" value="{{ old('tanggal') }}" class="form-control @error('tanggal') is-invalid @enderror">
                     @error('tanggal')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -204,7 +204,6 @@
             const hargaInput = row.querySelector('.input-harga');
 
             if (opt && opt.value) {
-                // Barang dipilih dari master: isi otomatis, tapi tetap bisa diedit manual
                 namaInput.value = opt.dataset.nama || '';
                 satuanInput.value = opt.dataset.satuan || '';
                 hargaInput.value = opt.dataset.harga ? formatRupiah(opt.dataset.harga) : '';

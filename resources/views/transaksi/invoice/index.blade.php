@@ -13,9 +13,24 @@
             <div class="col-md-4">
                 <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Cari No. Invoice">
             </div>
+            <div class="col-md-4">
+                <select name="perusahaan_id" class="form-select">
+                    <option value="">-- Semua Perusahaan --</option>
+                    @foreach($perusahaans as $perusahaan)
+                        <option value="{{ $perusahaan->id }}" {{ request('perusahaan_id') == $perusahaan->id ? 'selected' : '' }}>
+                            {{ $perusahaan->nama_perusahaan }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-secondary w-100">Cari</button>
             </div>
+            @if(request('search') || request('perusahaan_id'))
+                <div class="col-md-2">
+                    <a href="{{ route('invoice.index') }}" class="btn btn-outline-secondary w-100">Reset</a>
+                </div>
+            @endif
         </form>
     </div>
 
@@ -25,6 +40,7 @@
                 <tr>
                     <th style="width: 50px">#</th>
                     <th>No. Invoice</th>
+                    <th>No. PO</th>
                     <th>Tanggal</th>
                     <th>Perusahaan</th>
                     <th>Customer</th>
@@ -38,7 +54,8 @@
                     <tr>
                         <td>{{ $loop->iteration + ($invoices->currentPage() - 1) * $invoices->perPage() }}</td>
                         <td>{{ $invoice->no_invoice }}</td>
-                        <td>{{ \Carbon\Carbon::parse($invoice->tanggal_invoice)->format('d-m-Y') }}</td>
+                        <td>{{ $invoice->no_po ?? '-' }}</td>
+                        <td>{{ $invoice->tanggal_invoice ? \Carbon\Carbon::parse($invoice->tanggal_invoice)->format('d-m-Y') : '-' }}</td>
                         <td>{{ $invoice->perusahaan->nama_perusahaan ?? '-' }}</td>
                         <td>{{ $invoice->customer->nama_customer ?? '-' }}</td>
                         <td>{{ $invoice->deliveryNote->no_delivery_note ?? '-' }}</td>
@@ -56,7 +73,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted">Belum ada data invoice.</td>
+                        <td colspan="9" class="text-center text-muted">Belum ada data invoice.</td>
                     </tr>
                 @endforelse
             </tbody>

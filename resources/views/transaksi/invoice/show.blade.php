@@ -27,7 +27,7 @@
             </div>
             <div class="col-md-4">
                 <div class="text-muted small">Tanggal Invoice</div>
-                <div class="fw-semibold">{{ \Carbon\Carbon::parse($invoice->tanggal_invoice)->format('d-m-Y') }}</div>
+                <div class="fw-semibold">{{ $invoice->tanggal_invoice ? \Carbon\Carbon::parse($invoice->tanggal_invoice)->format('d-m-Y') : '-' }}</div>
             </div>
             <div class="col-md-4">
                 <div class="text-muted small">No. PO</div>

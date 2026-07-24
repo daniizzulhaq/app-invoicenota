@@ -5,7 +5,7 @@
     <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
     <title>Invoice - {{ $invoice->no_invoice }}</title>
     <style>
-        @page { size: A4; margin: 15mm 15mm 15mm 15mm; }
+        @page { size: A4; margin: 15mm 18mm 15mm 15mm; }
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; background: #e9ecef; font-family: 'Calibri', 'Carlito', Arial, sans-serif; }
         .page {
@@ -66,7 +66,7 @@
         .customer-info .nama-customer { font-weight: bold; }
         .customer-info .alamat-customer { font-size: 15px; line-height: 1.5; }
 
-        table.items { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        table.items { width: calc(100% - 3mm); border-collapse: collapse; table-layout: fixed; }
         table.items th, table.items td { border: 1px solid #000; padding: 3px 6px; }
         table.items th { background: #f0f0f0; font-size: 14px; text-align: center; font-weight: bold; white-space: normal; overflow: visible; }
         table.items td { font-size: 15px; vertical-align: middle; height: 21px; }
