@@ -58,7 +58,7 @@
                         <td>{{ $invoice->tanggal_invoice ? \Carbon\Carbon::parse($invoice->tanggal_invoice)->format('d-m-Y') : '-' }}</td>
                         <td>{{ $invoice->perusahaan->nama_perusahaan ?? '-' }}</td>
                         <td>{{ $invoice->customer->nama_customer ?? '-' }}</td>
-                        <td>{{ $invoice->deliveryNote->no_delivery_note ?? '-' }}</td>
+                        <td>{{ $invoice->deliveryNotes->pluck('no_delivery_note')->implode(', ') ?: '-' }}</td>
                         <td>{{ number_format($invoice->total, 0, ',', '.') }}</td>
                         <td>
                             <a href="{{ route('invoice.show', $invoice) }}" class="btn btn-sm btn-info">Detail</a>

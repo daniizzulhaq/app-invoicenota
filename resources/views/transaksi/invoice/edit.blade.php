@@ -21,7 +21,7 @@
 
                 <div class="col-md-6">
                     <label class="form-label">Delivery Note</label>
-                    <input type="text" class="form-control" value="{{ $invoice->deliveryNote->no_delivery_note ?? '-' }}" readonly>
+                    <input type="text" class="form-control" value="{{ $invoice->deliveryNotes->pluck('no_delivery_note')->implode(', ') ?: '-' }}" readonly>
                 </div>
 
                 <div class="col-md-6">

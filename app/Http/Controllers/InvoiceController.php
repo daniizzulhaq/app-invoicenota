@@ -11,23 +11,23 @@ use Illuminate\Support\Facades\DB;
 class InvoiceController extends Controller
 {
     public function index(Request $request)
-{
-    $invoices = Invoice::with(['perusahaan', 'customer', 'deliveryNote'])
-        ->when($request->search, function ($query, $search) {
-            $query->where('no_invoice', 'like', "%{$search}%")
-                ->orWhere('no_po', 'like', "%{$search}%");
-        })
-        ->when($request->perusahaan_id, function ($query, $perusahaanId) {
-            $query->where('perusahaan_id', $perusahaanId);
-        })
-        ->latest()
-        ->paginate(10)
-        ->withQueryString();
+    {
+        $invoices = Invoice::with(['perusahaan', 'customer', 'deliveryNotes'])
+            ->when($request->search, function ($query, $search) {
+                $query->where('no_invoice', 'like', "%{$search}%")
+                    ->orWhere('no_po', 'like', "%{$search}%");
+            })
+            ->when($request->perusahaan_id, function ($query, $perusahaanId) {
+                $query->where('perusahaan_id', $perusahaanId);
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
-    $perusahaans = Perusahaan::orderBy('nama_perusahaan')->get();
+        $perusahaans = Perusahaan::orderBy('nama_perusahaan')->get();
 
-    return view('transaksi.invoice.index', compact('invoices', 'perusahaans'));
-}
+        return view('transaksi.invoice.index', compact('invoices', 'perusahaans'));
+    }
 
     public function create()
     {
@@ -39,7 +39,7 @@ class InvoiceController extends Controller
     public function deliveryNotesByPerusahaan(Perusahaan $perusahaan)
     {
         $deliveryNotes = $perusahaan->deliveryNotes()
-            ->whereDoesntHave('invoice')
+            ->whereDoesntHave('invoices')
             ->with('customer')
             ->orderByDesc('tanggal')
             ->get(['id', 'no_delivery_note', 'no_po', 'tanggal', 'customer_id']);
@@ -58,7 +58,8 @@ class InvoiceController extends Controller
     {
         $validated = $request->validate([
             'perusahaan_id' => 'required|exists:perusahaans,id',
-            'delivery_note_id' => 'required|exists:delivery_notes,id',
+            'delivery_note_ids' => 'required|array|min:1',
+            'delivery_note_ids.*' => 'exists:delivery_notes,id',
             'rekening_id' => 'required|exists:rekenings,id',
             'no_invoice' => 'required|string|max:100',
             'tanggal_invoice' => 'required|date',
@@ -74,13 +75,28 @@ class InvoiceController extends Controller
             'items.*.harga' => 'required|numeric|min:0',
         ]);
 
-        $deliveryNote = DeliveryNote::with('customer')->findOrFail($validated['delivery_note_id']);
+        $deliveryNotes = DeliveryNote::with('customer')
+            ->whereIn('id', $validated['delivery_note_ids'])
+            ->get();
 
-        if ($deliveryNote->invoice()->exists()) {
-            return back()->withErrors(['delivery_note_id' => 'Delivery Note ini sudah punya invoice.'])->withInput();
+        if ($deliveryNotes->count() !== count($validated['delivery_note_ids'])) {
+            return back()->withErrors(['delivery_note_ids' => 'Salah satu Delivery Note tidak ditemukan.'])->withInput();
         }
 
-        DB::transaction(function () use ($validated, $deliveryNote, $request) {
+        $sudahPunyaInvoice = $deliveryNotes->filter(fn ($dn) => $dn->invoices()->exists());
+        if ($sudahPunyaInvoice->isNotEmpty()) {
+            $noDn = $sudahPunyaInvoice->pluck('no_delivery_note')->implode(', ');
+            return back()->withErrors(['delivery_note_ids' => "Delivery Note berikut sudah punya invoice: {$noDn}"])->withInput();
+        }
+
+        $customerIds = $deliveryNotes->pluck('customer_id')->unique();
+        if ($customerIds->count() > 1) {
+            return back()->withErrors(['delivery_note_ids' => 'Semua Delivery Note yang digabung harus punya Customer yang sama.'])->withInput();
+        }
+
+        $firstDn = $deliveryNotes->first();
+
+        DB::transaction(function () use ($validated, $deliveryNotes, $firstDn, $request) {
             $subtotal = collect($validated['items'])->sum(fn ($item) => $item['qty'] * $item['harga']);
             $ppnPersen = $validated['ppn_persen'] ?? 11;
             $ppnNominal = round($subtotal * $ppnPersen / 100, 2);
@@ -88,19 +104,20 @@ class InvoiceController extends Controller
 
             $invoice = Invoice::create([
                 'perusahaan_id' => $validated['perusahaan_id'],
-                'delivery_note_id' => $deliveryNote->id,
-                'customer_id' => $deliveryNote->customer_id,
+                'customer_id' => $firstDn->customer_id,
                 'rekening_id' => $validated['rekening_id'],
                 'user_id' => $request->user()->id,
                 'no_invoice' => $validated['no_invoice'],
                 'tanggal_invoice' => $validated['tanggal_invoice'],
-                'no_po' => $validated['no_po'] ?? $deliveryNote->no_po,
+                'no_po' => $validated['no_po'] ?? $firstDn->no_po,
                 'catatan' => $validated['catatan'] ?? null,
                 'subtotal' => $subtotal,
                 'ppn_persen' => $ppnPersen,
                 'ppn_nominal' => $ppnNominal,
                 'total' => $total,
             ]);
+
+            $invoice->deliveryNotes()->attach($deliveryNotes->pluck('id'));
 
             foreach ($validated['items'] as $item) {
                 $invoice->items()->create([
@@ -119,13 +136,13 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice)
     {
-        $invoice->load(['perusahaan', 'customer', 'rekening', 'deliveryNote', 'items']);
+        $invoice->load(['perusahaan', 'customer', 'rekening', 'deliveryNotes', 'items']);
         return view('transaksi.invoice.show', compact('invoice'));
     }
 
     public function edit(Invoice $invoice)
     {
-        $invoice->load(['items', 'deliveryNote', 'perusahaan.rekenings']);
+        $invoice->load(['items', 'deliveryNotes', 'perusahaan.rekenings']);
         $perusahaans = Perusahaan::orderBy('nama_perusahaan')->get();
 
         return view('transaksi.invoice.edit', compact('invoice', 'perusahaans'));
@@ -193,7 +210,7 @@ class InvoiceController extends Controller
 
     public function cetak(Invoice $invoice)
     {
-        $invoice->load(['perusahaan', 'customer', 'rekening', 'items']);
+        $invoice->load(['perusahaan', 'customer', 'rekening', 'deliveryNotes', 'items']);
         return view('transaksi.invoice.cetak', compact('invoice'));
     }
 }

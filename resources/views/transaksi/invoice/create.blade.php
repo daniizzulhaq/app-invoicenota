@@ -30,11 +30,12 @@
 
                 <div class="col-md-6">
                     <label class="form-label">Delivery Note <span class="text-danger">*</span></label>
-                    <select name="delivery_note_id" id="select-dn" class="form-select @error('delivery_note_id') is-invalid @enderror" disabled>
-                        <option value="">-- Pilih Perusahaan Dahulu --</option>
-                    </select>
-                    @error('delivery_note_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                    <div id="wrap-dn" class="border rounded p-2" style="max-height: 160px; overflow-y: auto; background: #f8f9fa;">
+                        <div class="text-muted small">-- Pilih Perusahaan Dahulu --</div>
+                    </div>
+                    <div class="form-text">Centang 2 atau lebih Delivery Note untuk digabung ke 1 invoice. Semua DN yang dipilih harus punya Customer yang sama.</div>
+                    @error('delivery_note_ids')
+                        <div class="text-danger small">{{ $message }}</div>
                     @enderror
                 </div>
 
@@ -102,7 +103,7 @@
         </div>
 
         <div class="card-box mb-3">
-            <h6 class="mb-3">Daftar Barang <small class="text-muted">(dari Delivery Note, harga bisa diubah manual)</small></h6>
+            <h6 class="mb-3">Daftar Barang <small class="text-muted">(gabungan dari Delivery Note terpilih, harga bisa diubah manual)</small></h6>
 
             @error('items')
                 <div class="alert alert-danger py-2">{{ $message }}</div>
@@ -111,16 +112,17 @@
             <table class="table table-bordered align-middle mb-0" id="table-barang">
                 <thead>
                     <tr>
-                        <th style="width: 35%">Barang</th>
-                        <th style="width: 15%">Qty</th>
-                        <th style="width: 15%">Satuan</th>
-                        <th style="width: 17%">Harga</th>
-                        <th style="width: 18%">Total</th>
+                        <th style="width: 30%">Barang</th>
+                        <th style="width: 15%">Dari DN</th>
+                        <th style="width: 12%">Qty</th>
+                        <th style="width: 13%">Satuan</th>
+                        <th style="width: 15%">Harga</th>
+                        <th style="width: 15%">Total</th>
                     </tr>
                 </thead>
                 <tbody id="tbody-barang">
                     <tr>
-                        <td colspan="5" class="text-center text-muted">Pilih Delivery Note untuk menampilkan barang.</td>
+                        <td colspan="6" class="text-center text-muted">Pilih Delivery Note untuk menampilkan barang.</td>
                     </tr>
                 </tbody>
             </table>
@@ -153,7 +155,7 @@
 @push('scripts')
 <script>
     const selectPerusahaan = document.getElementById('select-perusahaan');
-    const selectDn = document.getElementById('select-dn');
+    const wrapDn = document.getElementById('wrap-dn');
     const selectRekening = document.getElementById('select-rekening');
     const displayCustomer = document.getElementById('display-customer');
     const displayAlamat = document.getElementById('display-alamat');
@@ -161,6 +163,10 @@
     const inputPpn = document.getElementById('input-ppn');
     const tbodyBarang = document.getElementById('tbody-barang');
     const btnSimpan = document.getElementById('btn-simpan');
+
+    // cache detail per delivery note yang sudah pernah di-fetch: { dnId: {no_delivery_note, customer, items} }
+    const dnCache = {};
+    let itemCount = 0;
 
     function formatRupiah(angka) {
         angka = parseFloat(angka) || 0;
@@ -170,8 +176,6 @@
     function unformat(str) {
         return parseFloat((str || '0').toString().replace(/\./g, '').replace(',', '.')) || 0;
     }
-
-    let itemCount = 0;
 
     function hitungTotal() {
         let subtotal = 0;
@@ -193,42 +197,81 @@
         document.getElementById('display-total').textContent = formatRupiah(total);
     }
 
-    function renderItems(items) {
+    function getCheckedDnIds() {
+        return Array.from(wrapDn.querySelectorAll('.dn-checkbox:checked')).map(el => el.value);
+    }
+
+    function renderItemsFromSelectedDn() {
+        const checkedIds = getCheckedDnIds();
         tbodyBarang.innerHTML = '';
         itemCount = 0;
 
-        if (!items || items.length === 0) {
-            tbodyBarang.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Delivery Note ini tidak memiliki barang.</td></tr>';
+        if (checkedIds.length === 0) {
+            tbodyBarang.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Pilih minimal 1 Delivery Note.</td></tr>';
+            displayCustomer.value = '';
+            displayAlamat.value = '';
+            btnSimpan.disabled = true;
+            hitungTotal();
             return;
         }
 
-        items.forEach((item) => {
-            const index = itemCount;
-            const tr = document.createElement('tr');
-            tr.className = 'row-barang';
-            const harga = item.harga ?? 0;
-            tr.innerHTML = `
-                <td>
-                    <input type="hidden" name="items[${index}][barang_id]" value="${item.barang_id ?? ''}">
-                    <input type="text" name="items[${index}][nama_barang]" value="${item.nama_barang ?? ''}" class="form-control form-control-sm">
-                </td>
-                <td>
-                    <input type="number" step="0.01" min="0.01" name="items[${index}][qty]" value="${item.qty ?? 1}" class="form-control form-control-sm input-qty">
-                </td>
-                <td>
-                    <input type="text" name="items[${index}][satuan]" value="${item.satuan ?? ''}" class="form-control form-control-sm">
-                </td>
-                <td>
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text">Rp</span>
-                        <input type="text" name="items[${index}][harga]" value="${harga ? formatRupiah(harga) : ''}" class="form-control form-control-sm input-harga" inputmode="numeric" placeholder="0">
-                    </div>
-                </td>
-                <td class="text-end cell-total">${formatRupiah((item.qty ?? 1) * harga)}</td>
-            `;
-            tbodyBarang.appendChild(tr);
-            itemCount++;
+        // validasi customer sama
+        const customers = checkedIds.map(id => dnCache[id]?.customer).filter(Boolean);
+        const customerIds = [...new Set(customers.map(c => c.id))];
+
+        if (customerIds.length > 1) {
+            tbodyBarang.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Delivery Note yang dipilih punya Customer berbeda. Pilih DN dengan Customer yang sama.</td></tr>';
+            btnSimpan.disabled = true;
+            hitungTotal();
+            return;
+        }
+
+        displayCustomer.value = customers[0]?.nama_customer ?? '';
+        displayAlamat.value = customers[0]?.alamat ?? '';
+
+        let anyItem = false;
+
+        checkedIds.forEach(dnId => {
+            const dn = dnCache[dnId];
+            if (!dn || !dn.items || dn.items.length === 0) return;
+
+            dn.items.forEach(item => {
+                const index = itemCount;
+                anyItem = true;
+                const harga = item.harga ?? 0;
+                const tr = document.createElement('tr');
+                tr.className = 'row-barang';
+                tr.innerHTML = `
+                    <td>
+                        <input type="hidden" name="items[${index}][barang_id]" value="${item.barang_id ?? ''}">
+                        <input type="text" name="items[${index}][nama_barang]" value="${item.nama_barang ?? ''}" class="form-control form-control-sm">
+                    </td>
+                    <td class="align-middle text-muted small">${dn.no_delivery_note}</td>
+                    <td>
+                        <input type="number" step="0.01" min="0.01" name="items[${index}][qty]" value="${item.qty ?? 1}" class="form-control form-control-sm input-qty">
+                    </td>
+                    <td>
+                        <input type="text" name="items[${index}][satuan]" value="${item.satuan ?? ''}" class="form-control form-control-sm">
+                    </td>
+                    <td>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" name="items[${index}][harga]" value="${harga ? formatRupiah(harga) : ''}" class="form-control form-control-sm input-harga" inputmode="numeric" placeholder="0">
+                        </div>
+                    </td>
+                    <td class="text-end cell-total">${formatRupiah((item.qty ?? 1) * harga)}</td>
+                `;
+                tbodyBarang.appendChild(tr);
+                itemCount++;
+            });
         });
+
+        if (!anyItem) {
+            tbodyBarang.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Delivery Note terpilih tidak memiliki barang.</td></tr>';
+        }
+
+        btnSimpan.disabled = !anyItem || customerIds.length > 1;
+        hitungTotal();
     }
 
     tbodyBarang.addEventListener('input', function (e) {
@@ -248,31 +291,37 @@
     selectPerusahaan.addEventListener('change', function () {
         const perusahaanId = this.value;
 
-        selectDn.innerHTML = '<option value="">-- Memuat... --</option>';
-        selectDn.disabled = true;
+        wrapDn.innerHTML = '<div class="text-muted small">-- Memuat... --</div>';
         selectRekening.innerHTML = '<option value="">-- Pilih Perusahaan Dahulu --</option>';
-        displayCustomer.value = '';
-        displayAlamat.value = '';
-        renderItems([]);
-        hitungTotal();
-        btnSimpan.disabled = true;
+        Object.keys(dnCache).forEach(k => delete dnCache[k]);
+        renderItemsFromSelectedDn();
 
         if (!perusahaanId) {
-            selectDn.innerHTML = '<option value="">-- Pilih Perusahaan Dahulu --</option>';
+            wrapDn.innerHTML = '<div class="text-muted small">-- Pilih Perusahaan Dahulu --</div>';
             return;
         }
 
         fetch(`/delivery-note-by-perusahaan/${perusahaanId}`)
             .then(res => res.json())
             .then(data => {
-                selectDn.innerHTML = '<option value="">-- Pilih Delivery Note --</option>';
+                if (data.length === 0) {
+                    wrapDn.innerHTML = '<div class="text-muted small">Tidak ada Delivery Note yang tersedia (belum punya invoice) untuk perusahaan ini.</div>';
+                    return;
+                }
+
+                wrapDn.innerHTML = '';
                 data.forEach(dn => {
-                    const opt = document.createElement('option');
-                    opt.value = dn.id;
-                    opt.textContent = `${dn.no_delivery_note} (${dn.tanggal ?? '-'})`;
-                    selectDn.appendChild(opt);
+                    const id = `dn-${dn.id}`;
+                    const div = document.createElement('div');
+                    div.className = 'form-check';
+                    div.innerHTML = `
+                        <input class="form-check-input dn-checkbox" type="checkbox" value="${dn.id}" id="${id}">
+                        <label class="form-check-label" for="${id}">
+                            ${dn.no_delivery_note} ${dn.tanggal ? '(' + dn.tanggal + ')' : ''}
+                        </label>
+                    `;
+                    wrapDn.appendChild(div);
                 });
-                selectDn.disabled = false;
             });
 
         fetch(`/rekening-by-perusahaan/${perusahaanId}`)
@@ -295,47 +344,64 @@
             });
     });
 
-    selectDn.addEventListener('change', function () {
-        const dnId = this.value;
+    wrapDn.addEventListener('change', function (e) {
+        if (!e.target.classList.contains('dn-checkbox')) return;
 
-        if (!dnId) {
-            displayCustomer.value = '';
-            displayAlamat.value = '';
-            renderItems([]);
-            hitungTotal();
-            btnSimpan.disabled = true;
-            return;
+        const dnId = e.target.value;
+
+        if (e.target.checked && !dnCache[dnId]) {
+            e.target.disabled = true;
+            fetch(`/delivery-note-detail/${dnId}`)
+                .then(res => res.json())
+                .then(data => {
+                    dnCache[dnId] = {
+                        no_delivery_note: data.no_delivery_note,
+                        customer: data.customer,
+                        items: (data.items || []).map(item => ({
+                            barang_id: item.barang_id,
+                            nama_barang: item.nama_barang,
+                            qty: item.qty,
+                            satuan: item.satuan,
+                            harga: item.harga,
+                        })),
+                    };
+                    if (!inputNoPo.value && data.no_po) {
+                        inputNoPo.value = data.no_po;
+                    }
+                    e.target.disabled = false;
+                    renderItemsFromSelectedDn();
+                });
+        } else {
+            renderItemsFromSelectedDn();
         }
-
-        fetch(`/delivery-note-detail/${dnId}`)
-            .then(res => res.json())
-            .then(data => {
-                displayCustomer.value = data.customer?.nama_customer ?? '';
-                displayAlamat.value = data.customer?.alamat ?? '';
-                inputNoPo.value = inputNoPo.value || data.no_po || '';
-
-                const items = (data.items || []).map(item => ({
-                    barang_id: item.barang_id,
-                    nama_barang: item.nama_barang,
-                    qty: item.qty,
-                    satuan: item.satuan,
-                    harga: item.harga,
-                }));
-
-                renderItems(items);
-                hitungTotal();
-                btnSimpan.disabled = items.length === 0;
-            });
     });
 
     inputPpn.addEventListener('input', hitungTotal);
 
     document.getElementById('form-invoice').addEventListener('submit', function (e) {
-        if (tbodyBarang.querySelectorAll('tr.row-barang').length === 0) {
+        const checkedIds = getCheckedDnIds();
+
+        if (checkedIds.length === 0) {
             e.preventDefault();
-            alert('Pilih Delivery Note yang memiliki barang terlebih dahulu.');
+            alert('Pilih minimal 1 Delivery Note.');
             return;
         }
+
+        if (tbodyBarang.querySelectorAll('tr.row-barang').length === 0) {
+            e.preventDefault();
+            alert('Delivery Note yang dipilih tidak memiliki barang.');
+            return;
+        }
+
+        // sisipkan hidden input delivery_note_ids[]
+        checkedIds.forEach(id => {
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'delivery_note_ids[]';
+            hidden.value = id;
+            this.appendChild(hidden);
+        });
+
         document.querySelectorAll('.input-harga').forEach(el => {
             el.value = unformat(el.value);
         });

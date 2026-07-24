@@ -94,7 +94,7 @@ class DeliveryNoteController extends Controller
 
     public function show(DeliveryNote $deliveryNote)
     {
-        $deliveryNote->load(['perusahaan', 'customer', 'items', 'invoice']);
+        $deliveryNote->load(['perusahaan', 'customer', 'items', 'invoices']);
         return view('transaksi.delivery-note.show', compact('deliveryNote'));
     }
 

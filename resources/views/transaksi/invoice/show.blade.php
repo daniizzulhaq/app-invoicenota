@@ -34,8 +34,14 @@
                 <div class="fw-semibold">{{ $invoice->no_po ?? '-' }}</div>
             </div>
             <div class="col-md-6">
-                <div class="text-muted small">Delivery Note</div>
-                <div class="fw-semibold">{{ $invoice->deliveryNote->no_delivery_note ?? '-' }}</div>
+               <div class="text-muted small">Delivery Note</div>
+<div class="fw-semibold">
+    @forelse($invoice->deliveryNotes as $dn)
+        <span class="badge bg-secondary">{{ $dn->no_delivery_note }}</span>
+    @empty
+        -
+    @endforelse
+</div>
             </div>
             <div class="col-md-6">
                 <div class="text-muted small">Rekening</div>

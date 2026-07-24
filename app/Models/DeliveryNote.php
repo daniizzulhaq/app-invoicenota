@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class DeliveryNote extends Model
 {
@@ -44,14 +44,14 @@ class DeliveryNote extends Model
         return $this->hasMany(DeliveryNoteItem::class);
     }
 
-    public function invoice(): HasOne
+    public function invoices(): BelongsToMany
     {
-        return $this->hasOne(Invoice::class);
+        return $this->belongsToMany(Invoice::class, 'invoice_delivery_note');
     }
 
     public function getSudahDiinvoiceAttribute(): bool
     {
-        return $this->invoice()->exists();
+        return $this->invoices()->exists();
     }
 
     public function getSubtotalAttribute()
