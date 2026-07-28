@@ -145,8 +145,8 @@
             border-top: 1px solid #000;
         }
         table.items tbody tr:last-child td {
-            border-bottom: none;
-        }
+    border-bottom: 1px solid #000;
+}
 
         .summary-row td {
             font-weight: normal;
@@ -222,7 +222,7 @@
 </div>
 
 @php
-    $perPage = 12;
+    $perPage = 20;
     $allItems = $deliveryNote->items;
     $totalItems = $allItems->count();
     $totalPages = max(1, (int) ceil($totalItems / $perPage));
