@@ -22,7 +22,7 @@ class DeliveryNoteController extends Controller
                 $query->where('perusahaan_id', $perusahaanId);
             })
             ->latest()
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString();
 
         $perusahaans = Perusahaan::orderBy('nama_perusahaan')->get();
