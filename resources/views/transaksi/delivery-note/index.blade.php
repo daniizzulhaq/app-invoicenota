@@ -76,7 +76,50 @@
         </table>
     </div>
 
-    <div class="mt-3">
-        {{ $deliveryNotes->links() }}
-    </div>
+    @if($deliveryNotes->hasPages())
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 pagination-wrap">
+            <div class="text-muted small mb-2 mb-md-0">
+                Menampilkan {{ $deliveryNotes->firstItem() }}–{{ $deliveryNotes->lastItem() }} dari {{ $deliveryNotes->total() }} data
+            </div>
+            <div>
+                {{ $deliveryNotes->onEachSide(1)->links() }}
+            </div>
+        </div>
+    @endif
+
+    <style>
+        .pagination-wrap .pagination {
+            margin-bottom: 0;
+            gap: 4px;
+        }
+        .pagination-wrap .page-item .page-link {
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            color: #495057;
+            min-width: 38px;
+            text-align: center;
+            padding: 6px 12px;
+            font-size: 14px;
+            transition: all 0.15s ease;
+        }
+        .pagination-wrap .page-item .page-link:hover {
+            background-color: #f1f3f5;
+            border-color: #ced4da;
+            color: #212529;
+        }
+        .pagination-wrap .page-item.active .page-link {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+            color: #fff;
+            font-weight: 600;
+        }
+        .pagination-wrap .page-item.disabled .page-link {
+            background-color: #f8f9fa;
+            color: #adb5bd;
+            border-color: #e9ecef;
+        }
+        .pagination-wrap .page-link:focus {
+            box-shadow: none;
+        }
+    </style>
 @endsection
