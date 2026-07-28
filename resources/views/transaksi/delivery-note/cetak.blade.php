@@ -131,7 +131,8 @@
         table.items td.total { text-align: right; white-space: nowrap; }
 
         table.items tbody td {
-            height: 24px;
+            height: 17px;
+            padding: 3px 7px;
             border-left: 1px solid #000;
             border-right: 1px solid #000;
             border-top: none;
@@ -145,8 +146,8 @@
             border-top: 1px solid #000;
         }
         table.items tbody tr:last-child td {
-    border-bottom: 1px solid #000;
-}
+            border-bottom: 1px solid #000;
+        }
 
         .summary-row td {
             font-weight: normal;
@@ -186,7 +187,7 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-top: 24px;
+            margin-top: 12px;
         }
         .footer .box {
             width: 45%;
@@ -222,22 +223,50 @@
 </div>
 
 @php
-    $perPage = 20;
-    $allItems = $deliveryNote->items;
+    $allItems = $deliveryNote->items->values();
     $totalItems = $allItems->count();
-    $totalPages = max(1, (int) ceil($totalItems / $perPage));
+
+    $mainPerPage = 20;   // jumlah baris normal per halaman
+    $minLastPage = 15;   // batas maksimal baris di halaman terakhir agar TTD tetap ikut
+
+    // Susun jumlah item per halaman ke dalam array $pageSizes.
+    // Halaman-halaman awal tetap 20, khusus halaman terakhir dibatasi max 15
+    // kalau sisanya kurang dari atau sama dengan 15.
+    if ($totalItems <= $mainPerPage) {
+        $pageSizes = [$totalItems];
+    } else {
+        $pageSizes = [];
+        $remaining = $totalItems;
+
+        while ($remaining > $mainPerPage) {
+            $pageSizes[] = $mainPerPage;
+            $remaining -= $mainPerPage;
+        }
+
+        // $remaining adalah sisa item untuk halaman terakhir (selalu <= $mainPerPage di sini)
+        $pageSizes[] = $remaining;
+    }
+
+    $totalPages = count($pageSizes);
     $subtotal = $allItems->sum('total');
     $pakaiPpn = (bool) $deliveryNote->pakai_ppn;
     $ppnPersen = $deliveryNote->ppn_persen ?? 0;
     $ppnNominal = $pakaiPpn ? ($subtotal * $ppnPersen / 100) : 0;
     $grandTotal = $subtotal + $ppnNominal;
+
+    $runningIndex = 0;
 @endphp
 
-@for($page = 0; $page < $totalPages; $page++)
+@foreach($pageSizes as $pageIndex => $sizeThisPage)
     @php
-        $startIndex = $page * $perPage;
-        $pageItems = $allItems->slice($startIndex, $perPage);
-        $isLastPage = ($page === $totalPages - 1);
+        // Jumlah baris (termasuk baris kosong) yang dirender di halaman ini:
+        // kalau halaman ini berisi <= 15 item, tampilkan 15 baris (biar TTD ikut rapi).
+        // Kalau lebih dari 15 (berarti halaman penuh 20), tampilkan 20 baris.
+        $perPage = $sizeThisPage <= $minLastPage ? $minLastPage : $mainPerPage;
+
+        $startIndex = $runningIndex;
+        $pageItems = $allItems->slice($startIndex, $sizeThisPage)->values();
+        $isLastPage = ($pageIndex === $totalPages - 1);
     @endphp
 
     <div class="page">
@@ -269,7 +298,7 @@
             <h2>DELIVERY NOTE</h2>
             <div class="no-dn">{{ $deliveryNote->no_delivery_note }}</div>
             @if($totalPages > 1)
-                <div class="page-indicator">Halaman {{ $page + 1 }} dari {{ $totalPages }}</div>
+                <div class="page-indicator">Halaman {{ $pageIndex + 1 }} dari {{ $totalPages }}</div>
             @endif
         </div>
 
@@ -386,7 +415,9 @@
         @endif
 
     </div>
-@endfor
+
+    @php $runningIndex += $sizeThisPage; @endphp
+@endforeach
 
 </body>
 </html>
