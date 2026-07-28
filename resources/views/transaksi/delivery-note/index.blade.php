@@ -88,38 +88,76 @@
     @endif
 
     <style>
-        .pagination-wrap .pagination {
-            margin-bottom: 0;
-            gap: 4px;
+        /* Reset & rapikan struktur nav bawaan Laravel (Tailwind default) */
+        .pagination-wrap nav {
+            display: flex;
+            align-items: center;
         }
-        .pagination-wrap .page-item .page-link {
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-            color: #495057;
+        .pagination-wrap nav > div:first-child {
+            display: none; /* sembunyikan teks "Showing X to Y of Z results" bawaan, sudah kita ganti manual di atas */
+        }
+        .pagination-wrap nav > div:last-child,
+        .pagination-wrap nav > div {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        /* Tombol Previous / Next & nomor halaman */
+        .pagination-wrap nav a,
+        .pagination-wrap nav span:not([aria-current]) {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
             min-width: 38px;
-            text-align: center;
-            padding: 6px 12px;
+            height: 38px;
+            padding: 0 12px !important;
+            border-radius: 999px !important;
+            border: 1px solid #e2e5e9 !important;
+            background-color: #fff !important;
+            color: #495057 !important;
             font-size: 14px;
+            font-weight: 500;
+            text-decoration: none !important;
+            box-shadow: none !important;
             transition: all 0.15s ease;
         }
-        .pagination-wrap .page-item .page-link:hover {
-            background-color: #f1f3f5;
-            border-color: #ced4da;
-            color: #212529;
+        .pagination-wrap nav a:hover {
+            background-color: #f1f3f5 !important;
+            border-color: #ced4da !important;
+            color: #212529 !important;
         }
-        .pagination-wrap .page-item.active .page-link {
-            background-color: #0d6efd;
-            border-color: #0d6efd;
-            color: #fff;
+
+        /* Halaman disabled (Previous di halaman 1 / Next di halaman terakhir) */
+        .pagination-wrap nav span:not([aria-current]) {
+            color: #ced4da !important;
+            background-color: #f8f9fa !important;
+            border-color: #eef0f2 !important;
+            cursor: not-allowed;
+        }
+
+        /* Nomor halaman aktif */
+        .pagination-wrap nav span[aria-current="page"] {
+            display: inline-flex !important;
+        }
+        .pagination-wrap nav span[aria-current="page"] span {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            min-width: 38px;
+            height: 38px;
+            border-radius: 999px !important;
+            background-color: #0d6efd !important;
+            border: 1px solid #0d6efd !important;
+            color: #fff !important;
             font-weight: 600;
+            font-size: 14px;
         }
-        .pagination-wrap .page-item.disabled .page-link {
-            background-color: #f8f9fa;
-            color: #adb5bd;
-            border-color: #e9ecef;
-        }
-        .pagination-wrap .page-link:focus {
-            box-shadow: none;
+
+        /* Sembunyikan ikon SVG panah bawaan Tailwind, ganti dengan teks polos */
+        .pagination-wrap nav a svg,
+        .pagination-wrap nav span svg {
+            display: none;
         }
     </style>
 @endsection
