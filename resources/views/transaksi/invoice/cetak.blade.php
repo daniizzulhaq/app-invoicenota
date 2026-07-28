@@ -331,5 +331,34 @@
     </div>
 @endfor
 
+<script>
+    (function() {
+        const noInvoice = @json($invoice->no_invoice);
+        const tanggal = @json(\Carbon\Carbon::parse($invoice->tanggal_invoice)->format('d-m-Y'));
+        const perusahaan = @json($invoice->perusahaan->nama_perusahaan ?? '-');
+        const noPo = @json($invoice->no_po ?? '-');
+
+        function sanitize(str) {
+            return String(str).replace(/[\\/:*?"<>|]/g, '-').trim();
+        }
+
+        const fileName = [noInvoice, tanggal, perusahaan, noPo]
+            .map(sanitize)
+            .join('_');
+
+        const originalTitle = document.title;
+
+        window.addEventListener('beforeprint', function() {
+            document.title = fileName;
+        });
+
+        window.addEventListener('afterprint', function() {
+            document.title = originalTitle;
+        });
+
+        document.title = fileName;
+    })();
+</script>
+
 </body>
 </html>
