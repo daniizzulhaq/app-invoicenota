@@ -38,7 +38,6 @@
         }
         .toolbar button:hover { background: #1e56b8; }
 
-        /* Header: company name + address, centered */
         .company-header { text-align: center; }
         .company-name { font-size: 27px; font-weight: bold; margin: 0 0 4px 0; letter-spacing: 0.5px; }
         .company-detail { font-size: 15px; line-height: 1.6; margin: 0; }
@@ -49,7 +48,6 @@
         .title-box h2 { margin: 0; font-size: 20px; text-decoration: underline; letter-spacing: 2px; }
         .title-box .page-indicator { font-size: 14px; margin-top: 2px; font-style: italic; }
 
-        /* Invoice meta (left) + customer block (right) */
         .top-info {
             display: flex;
             justify-content: space-between;
@@ -76,8 +74,6 @@
         table.items td.price, table.items td.total { text-align: right; white-space: nowrap; }
         table.items td.empty-desc { text-align: left; }
 
-        /* Body rows: only the NO column keeps a horizontal line per row.
-           Other columns are borderless inside the box (outer box border only). */
         table.items tbody td {
             height: 19px;
             border-left: 1px solid #000;
@@ -254,7 +250,6 @@
                     </tr>
                 @endforeach
 
-                {{-- Blank filler rows so the box has a consistent printed-form height, up to $perPage per page --}}
                 @php
                     $fillerCount = max(0, $perPage - $filledOnThisPage);
                 @endphp
@@ -334,7 +329,7 @@
 <script>
     (function() {
         const noInvoice = @json($invoice->no_invoice);
-        const tanggal = @json(\Carbon\Carbon::parse($invoice->tanggal_invoice)->format('d-m-Y'));
+        const tanggal = @json(\Carbon\Carbon::parse($invoice->tanggal_invoice)->locale('en')->translatedFormat('d-F-Y'));
         const perusahaan = @json($invoice->perusahaan->nama_perusahaan ?? '-');
         const noPo = @json($invoice->no_po ?? '-');
 
