@@ -9,7 +9,7 @@ class BarangController extends Controller
 {
     public function index()
     {
-        $barangs = Barang::latest()->paginate(10);
+        $barangs = Barang::latest()->paginate(50);
         return view('master.barang.index', compact('barangs'));
     }
 
