@@ -4,7 +4,14 @@
 
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">Detail Delivery Note</h4>
+        <h4 class="mb-0">
+            Detail Delivery Note
+            @if($deliveryNote->invoices->isNotEmpty())
+                <span class="badge bg-success ms-2">Sudah Diinvoice</span>
+            @else
+                <span class="badge bg-secondary ms-2">Belum Diinvoice</span>
+            @endif
+        </h4>
         <div>
             <a href="{{ route('delivery-note.cetak', $deliveryNote) }}" target="_blank" class="btn btn-secondary btn-sm">Cetak PDF</a>
             <a href="{{ route('delivery-note.index') }}" class="btn btn-outline-secondary btn-sm">Kembali</a>
@@ -68,9 +75,19 @@
         </table>
     </div>
 
-    @if($deliveryNote->invoice)
+    @if($deliveryNote->invoices->isNotEmpty())
         <div class="alert alert-info">
-            Delivery Note ini sudah memiliki Invoice: <strong>{{ $deliveryNote->invoice->no_invoice }}</strong>
+            Delivery Note ini sudah dipakai pada Invoice:
+            <ul class="mb-0 mt-1">
+                @foreach($deliveryNote->invoices as $invoice)
+                    <li>
+                        <strong>{{ $invoice->no_invoice }}</strong>
+                        @isset($invoice->tanggal)
+                            — {{ \Carbon\Carbon::parse($invoice->tanggal)->format('d-m-Y') }}
+                        @endisset
+                    </li>
+                @endforeach
+            </ul>
         </div>
     @endif
 @endsection
