@@ -42,6 +42,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/delivery-note/{delivery_note}/cetak', [DeliveryNoteController::class, 'cetak'])
         ->name('delivery-note.cetak');
     Route::resource('delivery-note', DeliveryNoteController::class);
+    Route::post('delivery-note/check-nomor', [DeliveryNoteController::class, 'checkNomorDN'])->name('delivery-note.check-nomor');
 
     // ==== TRANSAKSI: INVOICE ====
     Route::get('/invoice/{invoice}/cetak', [InvoiceController::class, 'cetak'])

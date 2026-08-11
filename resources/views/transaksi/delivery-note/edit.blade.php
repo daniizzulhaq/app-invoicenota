@@ -54,10 +54,16 @@
 
                 <div class="col-md-4">
                     <label class="form-label">No. Delivery Note <span class="text-danger">*</span></label>
-                    <input type="text" name="no_delivery_note" value="{{ old('no_delivery_note', $deliveryNote->no_delivery_note) }}" class="form-control @error('no_delivery_note') is-invalid @enderror">
+                    <input type="text" name="no_delivery_note" id="no_delivery_note" value="{{ old('no_delivery_note', $deliveryNote->no_delivery_note) }}" class="form-control @error('no_delivery_note') is-invalid @enderror" autocomplete="off">
                     @error('no_delivery_note')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                    <div id="dn-warning" class="text-danger small mt-1" style="display:none;">
+                        ⚠️ Nomor ini sudah digunakan.
+                    </div>
+                    <div id="dn-checking" class="text-muted small mt-1" style="display:none;">
+                        Mengecek nomor...
+                    </div>
                 </div>
 
                 <div class="col-md-4">
@@ -125,7 +131,7 @@
         </div>
 
         <div class="text-end">
-            <button type="submit" class="btn btn-primary px-4">Update</button>
+            <button type="submit" class="btn btn-primary px-4" id="btn-submit-dn">Update</button>
         </div>
     </form>
 
@@ -272,10 +278,67 @@
         tambahBaris();
     }
 
+    // ====== Cek duplikasi No. Delivery Note (exclude record ini sendiri) ======
+    const noDnInput = document.getElementById('no_delivery_note');
+    const dnWarning = document.getElementById('dn-warning');
+    const dnChecking = document.getElementById('dn-checking');
+    const submitBtn = document.getElementById('btn-submit-dn');
+    const dnOriginalValue = @json($deliveryNote->no_delivery_note);
+    let dnIsDuplicate = false;
+
+    noDnInput.addEventListener('blur', function () {
+        const nilai = this.value.trim();
+
+        if (!nilai || nilai === dnOriginalValue) {
+            dnWarning.style.display = 'none';
+            noDnInput.classList.remove('is-invalid');
+            dnIsDuplicate = false;
+            return;
+        }
+
+        dnChecking.style.display = 'block';
+        dnWarning.style.display = 'none';
+
+        fetch(`{{ route('delivery-note.check-nomor') }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                no_delivery_note: nilai,
+                exclude_id: {{ $deliveryNote->id }}
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            dnChecking.style.display = 'none';
+            if (data.exists) {
+                dnWarning.style.display = 'block';
+                noDnInput.classList.add('is-invalid');
+                dnIsDuplicate = true;
+            } else {
+                dnWarning.style.display = 'none';
+                noDnInput.classList.remove('is-invalid');
+                dnIsDuplicate = false;
+            }
+        })
+        .catch(() => {
+            dnChecking.style.display = 'none';
+            // biarkan lanjut, validasi server tetap jadi jaring pengaman
+        });
+    });
+
     document.getElementById('form-dn').addEventListener('submit', function (e) {
         if (tbody.querySelectorAll('.row-barang').length === 0) {
             e.preventDefault();
             alert('Tambahkan minimal 1 barang.');
+            return;
+        }
+        if (dnIsDuplicate) {
+            e.preventDefault();
+            alert('No. Delivery Note sudah digunakan, silakan ganti nomor.');
+            noDnInput.focus();
             return;
         }
         document.querySelectorAll('.input-harga').forEach(el => {

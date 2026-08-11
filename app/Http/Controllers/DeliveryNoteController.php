@@ -45,7 +45,7 @@ class DeliveryNoteController extends Controller
             'perusahaan_id' => 'required|exists:perusahaans,id',
             'customer_id' => 'required|exists:customers,id',
             'no_po' => 'nullable|string|max:100',
-            'no_delivery_note' => 'required|string|max:100',
+            'no_delivery_note' => 'required|string|max:100|unique:delivery_notes,no_delivery_note',
             'tanggal' => 'nullable|date',
             'catatan' => 'nullable|string',
             'pakai_ppn' => 'nullable|boolean',
@@ -57,6 +57,8 @@ class DeliveryNoteController extends Controller
             'items.*.qty' => 'nullable|numeric|min:0',
             'items.*.satuan' => 'nullable|string|max:50',
             'items.*.harga' => 'nullable|numeric|min:0',
+        ], [
+            'no_delivery_note.unique' => 'No. Delivery Note ":input" sudah digunakan, silakan gunakan nomor lain.',
         ]);
 
         DB::transaction(function () use ($validated, $request) {
@@ -114,7 +116,7 @@ class DeliveryNoteController extends Controller
             'perusahaan_id' => 'required|exists:perusahaans,id',
             'customer_id' => 'required|exists:customers,id',
             'no_po' => 'nullable|string|max:100',
-            'no_delivery_note' => 'required|string|max:100',
+            'no_delivery_note' => 'required|string|max:100|unique:delivery_notes,no_delivery_note,' . $deliveryNote->id,
             'tanggal' => 'nullable|date',
             'catatan' => 'nullable|string',
             'pakai_ppn' => 'nullable|boolean',
@@ -126,6 +128,8 @@ class DeliveryNoteController extends Controller
             'items.*.qty' => 'nullable|numeric|min:0',
             'items.*.satuan' => 'nullable|string|max:50',
             'items.*.harga' => 'nullable|numeric|min:0',
+        ], [
+            'no_delivery_note.unique' => 'No. Delivery Note ":input" sudah digunakan, silakan gunakan nomor lain.',
         ]);
 
         DB::transaction(function () use ($validated, $deliveryNote, $request) {
@@ -173,5 +177,14 @@ class DeliveryNoteController extends Controller
     {
         $deliveryNote->load(['perusahaan', 'customer', 'items']);
         return view('transaksi.delivery-note.cetak', compact('deliveryNote'));
+    }
+
+    public function checkNomorDN(Request $request)
+    {
+        $exists = DeliveryNote::where('no_delivery_note', $request->no_delivery_note)
+            ->when($request->exclude_id, fn($q, $id) => $q->where('id', '!=', $id))
+            ->exists();
+
+        return response()->json(['exists' => $exists]);
     }
 }

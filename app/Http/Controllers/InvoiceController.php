@@ -211,6 +211,8 @@ class InvoiceController extends Controller
     public function cetak(Invoice $invoice)
     {
         $invoice->load(['perusahaan', 'customer', 'rekening', 'deliveryNotes', 'items']);
+        $invoice->setRelation('items', $invoice->items->values());
+
         return view('transaksi.invoice.cetak', compact('invoice'));
     }
 }
