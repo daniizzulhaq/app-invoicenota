@@ -62,7 +62,7 @@
 
         .customer-info { text-align: right; max-width: 260px; }
         .customer-info .nama-customer { font-weight: bold; }
-        .customer-info .alamat-customer { font-size: 13px; line-height: 1.5; }
+        .customer-info .alamat-customer { font-size: 12px; line-height: 1.3; }
 
         table.items { width: calc(100% - 3mm); border-collapse: collapse; table-layout: fixed; }
         table.items th, table.items td { border: 1px solid #000; padding: 3px 6px; }
