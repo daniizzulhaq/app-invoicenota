@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\Perusahaan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class InvoiceController extends Controller
 {
@@ -61,7 +62,10 @@ class InvoiceController extends Controller
             'delivery_note_ids' => 'required|array|min:1',
             'delivery_note_ids.*' => 'exists:delivery_notes,id',
             'rekening_id' => 'required|exists:rekenings,id',
-            'no_invoice' => 'required|string|max:100',
+            'no_invoice' => [
+                'required', 'string', 'max:100',
+                Rule::unique('invoices', 'no_invoice')->where('perusahaan_id', $request->input('perusahaan_id')),
+            ],
             'tanggal_invoice' => 'required|date',
             'no_po' => 'nullable|string|max:100',
             'catatan' => 'nullable|string',
@@ -73,6 +77,8 @@ class InvoiceController extends Controller
             'items.*.qty' => 'required|numeric|min:0.01',
             'items.*.satuan' => 'nullable|string|max:50',
             'items.*.harga' => 'required|numeric|min:0',
+        ], [
+            'no_invoice.unique' => 'Nomor invoice ini sudah ada, silakan gunakan nomor lain.',
         ]);
 
         $deliveryNotes = DeliveryNote::with('customer')
@@ -152,7 +158,12 @@ class InvoiceController extends Controller
     {
         $validated = $request->validate([
             'rekening_id' => 'required|exists:rekenings,id',
-            'no_invoice' => 'required|string|max:100',
+            'no_invoice' => [
+                'required', 'string', 'max:100',
+                Rule::unique('invoices', 'no_invoice')
+                    ->where('perusahaan_id', $invoice->perusahaan_id)
+                    ->ignore($invoice->id),
+            ],
             'tanggal_invoice' => 'required|date',
             'no_po' => 'nullable|string|max:100',
             'catatan' => 'nullable|string',
@@ -164,6 +175,8 @@ class InvoiceController extends Controller
             'items.*.qty' => 'required|numeric|min:0.01',
             'items.*.satuan' => 'nullable|string|max:50',
             'items.*.harga' => 'required|numeric|min:0',
+        ], [
+            'no_invoice.unique' => 'Nomor invoice ini sudah ada, silakan gunakan nomor lain.',
         ]);
 
         DB::transaction(function () use ($validated, $invoice) {

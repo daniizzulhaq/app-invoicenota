@@ -104,6 +104,10 @@
                 <div class="alert alert-success">{{ session('success') }}</div>
             @endif
 
+            @if($errors->has('no_invoice'))
+                <div class="alert alert-danger">{{ $errors->first('no_invoice') }}</div>
+            @endif
+
             @yield('content')
         </div>
     </div>
